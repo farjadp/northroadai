@@ -155,25 +155,28 @@ function PlanCard({
       <div className="space-y-2">
         <label className="text-xs text-slate-500 font-mono">Included Agents</label>
         <div className="grid grid-cols-2 gap-2">
-          {AGENTS.map((agent) => (
-            <button
-              key={agent.id}
-              type="button"
-              onClick={() => onToggleAgent(agent.id)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition ${
-                plan.includedAgents.includes(agent.id)
-                  ? "border-cyan-500/50 bg-cyan-500/10 text-white"
-                  : "border-white/10 bg-black text-slate-400 hover:border-white/20"
-              }`}
-            >
-              <span>{agent.icon}</span>
-              <span>{agent.name}</span>
-              {plan.includedAgents.includes(agent.id) && <CheckCircle2 className="w-4 h-4 text-cyan-400 ml-auto" />}
-            </button>
-          ))}
+          {AGENTS.map((agent) => {
+            const Icon = agent.icon;
+            const active = plan.includedAgents.includes(agent.id);
+            return (
+              <button
+                key={agent.id}
+                type="button"
+                onClick={() => onToggleAgent(agent.id)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition ${
+                  active
+                    ? "border-cyan-500/50 bg-cyan-500/10 text-white"
+                    : "border-white/10 bg-black text-slate-400 hover:border-white/20"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{agent.name}</span>
+                {active && <CheckCircle2 className="w-4 h-4 text-cyan-400 ml-auto" />}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
   );
 }
-"// ============================================================================\n// 📁 Hardware Source: src/app/admin/packages/page.tsx\n// 🕒 Date: 2025-11-30\n// 🧠 Version: v1.0 (Admin Packages)\n// ----------------------------------------------------------------------------\n// ✅ Logic:\n// - Loads plan configs from Firestore (plans/{tier}).\n// - Allows editing price, description, features, and included agents per tier.\n// - Saves updates back to Firestore.\n// ============================================================================\n\n\"use client\";\n"
