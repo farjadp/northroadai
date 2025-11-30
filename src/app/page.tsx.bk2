@@ -1,0 +1,185 @@
+"use client";
+import React, { useEffect, useState } from "react";
+import { motion, useMotionValue, useSpring } from "framer-motion";
+import { MoveUpRight, Zap, Command, Activity } from "lucide-react";
+
+// --- CUSTOM CURSOR (Smaller & Sharper) ---
+function FluidCursor() {
+  const mouseX = useMotionValue(-100);
+  const mouseY = useMotionValue(-100);
+  const springConfig = { damping: 20, stiffness: 400 };
+  const x = useSpring(mouseX, springConfig);
+  const y = useSpring(mouseY, springConfig);
+
+  useEffect(() => {
+    const moveCursor = (e: MouseEvent) => {
+      mouseX.set(e.clientX - 10);
+      mouseY.set(e.clientY - 10);
+    };
+    window.addEventListener("mousemove", moveCursor);
+    return () => window.removeEventListener("mousemove", moveCursor);
+  }, []);
+
+  return (
+    <motion.div
+      style={{ x, y }}
+      className="fixed top-0 left-0 w-5 h-5 bg-cyan-400 rounded-full pointer-events-none z-[9999] mix-blend-difference shadow-[0_0_20px_rgba(34,211,238,0.8)]"
+    />
+  );
+}
+
+// --- LIQUID BACKGROUND (Slower & darker) ---
+const LivingBackground = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden bg-[#050505] pointer-events-none">
+      <svg className="hidden">
+        <defs>
+          <filter id="goo">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur" />
+            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+            <feBlend in="SourceGraphic" in2="goo" />
+          </filter>
+        </defs>
+      </svg>
+      
+      {/* Darker, moodier blobs */}
+      <div className="absolute inset-0 w-full h-full" style={{ filter: "url(#goo)" }}>
+        <motion.div 
+          animate={{ x: [0, 80, -80, 0], y: [0, -80, 80, 0], scale: [1, 1.1, 0.9, 1] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[30%] left-[20%] w-[500px] h-[500px] bg-blue-950/30 rounded-full blur-[80px] opacity-40"
+        />
+        <motion.div 
+          animate={{ x: [0, -100, 100, 0], y: [0, 100, -100, 0], scale: [1, 1.2, 0.8, 1] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[20%] right-[20%] w-[600px] h-[600px] bg-indigo-950/30 rounded-full blur-[80px] opacity-40"
+        />
+      </div>
+      
+      {/* Grid overlay for structure */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]"></div>
+    </div>
+  );
+};
+
+export default function RefinedHome() {
+  const [isHoveringCard, setIsHoveringCard] = useState(false);
+
+  return (
+    <div className="relative min-h-screen bg-[#050505] text-white selection:bg-cyan-500/30 selection:text-cyan-100 overflow-hidden cursor-none font-sans">
+      <FluidCursor />
+      <LivingBackground />
+
+      {/* --- HEADER --- */}
+      <header className="fixed top-0 w-full p-8 flex justify-between items-center z-50">
+        <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <span className="font-bold text-black text-xs">NR</span>
+            </div>
+            <span className="text-sm font-medium tracking-wide text-slate-300">NORTH ROAD</span>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md">
+           <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+           <span className="text-[10px] font-mono text-slate-400 uppercase">Systems Optimal</span>
+        </div>
+      </header>
+
+      {/* --- MAIN STAGE --- */}
+      <main className="relative z-10 flex flex-col justify-center items-center h-screen px-4 w-full max-w-[1600px] mx-auto">
+        
+        {/* HUGE TYPOGRAPHY (Background Layer) */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+            <motion.h1 
+                animate={{ 
+                    opacity: isHoveringCard ? 0.1 : 0.3, 
+                    filter: isHoveringCard ? "blur(10px)" : "blur(0px)",
+                    scale: isHoveringCard ? 0.95 : 1
+                }}
+                transition={{ duration: 0.6 }}
+                className="text-[18vw] font-black tracking-tighter text-white leading-none text-center select-none"
+                style={{ 
+                    textShadow: "0 0 100px rgba(255,255,255,0.1)",
+                    WebkitTextStroke: "1px rgba(255,255,255,0.1)",
+                    color: "transparent"
+                }}
+            >
+                LIQUID<br/>MENTOR
+            </motion.h1>
+        </div>
+            
+        {/* INTERACTION CARD (Foreground Layer - Smoked Glass) */}
+        <motion.div 
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            onMouseEnter={() => setIsHoveringCard(true)}
+            onMouseLeave={() => setIsHoveringCard(false)}
+            className="relative z-20 w-full max-w-2xl"
+        >
+            {/* The Card Container */}
+            <div className="relative group rounded-3xl overflow-hidden transition-all duration-500 hover:shadow-[0_0_50px_rgba(6,182,212,0.15)]">
+                
+                {/* Smoked Glass Background */}
+                <div className="absolute inset-0 bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 transition-colors duration-500 group-hover:bg-[#0a0a0a]/90 group-hover:border-cyan-500/30"></div>
+                
+                <div className="relative p-8 md:p-10">
+                    {/* Header of Card */}
+                    <div className="flex justify-between items-start mb-8 border-b border-white/5 pb-6">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-cyan-950/30 rounded-xl border border-cyan-500/20 text-cyan-400">
+                                <Activity size={24} />
+                            </div>
+                            <div>
+                                <p className="text-xs text-cyan-500 font-mono mb-1 tracking-widest uppercase">Live Analysis</p>
+                                <h3 className="text-lg font-medium text-slate-200">Burn Rate Critical</h3>
+                            </div>
+                        </div>
+                        <span className="text-xs font-mono text-slate-500">Just now</span>
+                    </div>
+
+                    {/* AI Message Body */}
+                    <div className="space-y-4 mb-8">
+                        <p className="text-xl md:text-2xl text-slate-300 font-light leading-relaxed">
+                            "Based on your <span className="text-white font-normal border-b border-cyan-500/50">Seed round</span> data, you have 4 months of runway left. I suggest pausing the new hires."
+                        </p>
+                    </div>
+                    
+                    {/* Input Field Area */}
+                    <div className="relative flex items-center bg-black/50 border border-white/10 rounded-xl p-2 pl-4 group-focus-within:border-cyan-500/50 transition-colors">
+                         <Command size={18} className="text-slate-500 mr-3" />
+                         <input 
+                            type="text" 
+                            placeholder="Ask follow-up: How do I extend runway?" 
+                            className="bg-transparent border-none outline-none text-white w-full font-mono text-sm h-10 placeholder:text-slate-600"
+                         />
+                         <button className="h-10 px-6 bg-cyan-600 hover:bg-cyan-500 text-black text-xs font-bold uppercase tracking-wider rounded-lg transition-colors">
+                            Ask
+                         </button>
+                    </div>
+                </div>
+
+                {/* Progressive Loading Line at bottom */}
+                <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-500 to-transparent w-full opacity-50"></div>
+            </div>
+        </motion.div>
+
+        {/* --- BOTTOM NAV --- */}
+        <div className="absolute bottom-10 w-full px-10 flex justify-between items-end z-20 pointer-events-none">
+             <div className="text-xs font-mono text-slate-600 leading-relaxed">
+                /// SYSTEM V1.0<br/>
+                CONTEXT-AWARE ENGINE<br/>
+                EST. 2025
+             </div>
+             
+             <div className="pointer-events-auto">
+                 <button className="flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition-colors group">
+                    Explore Features
+                    <MoveUpRight size={14} className="group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" />
+                 </button>
+             </div>
+        </div>
+
+      </main>
+    </div>
+  );
+}
