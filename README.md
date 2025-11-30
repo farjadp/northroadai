@@ -98,3 +98,17 @@ flowchart LR
     GuestAPI --> Model
     AdminAPI --> Firestore
 ```
+
+## Deploy Details (Cloud Run + Buildpacks)
+- Ensure env vars are set in both build and runtime (Firebase + Gemini):
+  - `NEXT_PUBLIC_FIREBASE_API_KEY`
+  - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+  - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+  - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+  - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+  - `NEXT_PUBLIC_FIREBASE_APP_ID`
+  - `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`
+  - `GEMINI_API_KEY`
+- If using `gcloud run deploy`, pass env vars via `--set-env-vars` or set them in Cloud Run service UI (Variables & Secrets). Buildpacks also need these during build.
+- Build error `auth/invalid-api-key` means Firebase keys are missing or from the wrong project; fix envs before deploy.
+- Optional: silence the baseline-browser-mapping warning by `npm i baseline-browser-mapping@latest -D` before building.
