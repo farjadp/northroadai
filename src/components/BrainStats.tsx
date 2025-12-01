@@ -8,13 +8,24 @@ export default function BrainStats({ variant = "full" }: { variant?: "full" | "c
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/stats")
-      .then((res) => res.json())
-      .then((data) => {
-        setStats(data);
+    const load = async () => {
+      try {
+        const res = await fetch("/api/stats");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load stats");
+        setStats({
+          totalVectors: Number(data.totalVectors) || 0,
+          ragPercentage: Number(data.ragPercentage) || 0,
+          totalQueries: Number(data.totalQueries) || 0,
+        });
+      } catch (err) {
+        console.error(err);
+        setStats({ totalVectors: 0, ragPercentage: 0, totalQueries: 0 });
+      } finally {
         setLoading(false);
-      })
-      .catch((err) => console.error(err));
+      }
+    };
+    load();
   }, []);
 
   if (loading) return <div className="h-24 bg-white/5 animate-pulse rounded-xl"></div>;
