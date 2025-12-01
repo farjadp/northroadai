@@ -1,18 +1,19 @@
 // ============================================================================
 // 📁 Hardware Source: src/app/admin/knowledge/page.tsx
 // 🕒 Date: 2025-11-30
-// 🧠 Version: v4.0 (Tri-Force: Files + HuggingFace + WebScraper)
+// 🧠 Version: v5.0 (Bug Fix: Date Display)
 // ----------------------------------------------------------------------------
-// ✅ Added Tab 3: Web Scraper View.
+// ✅ Fix: Replaced direct .toLocaleDateString() with safe check.
+// ✅ Logic: Handles Firestore Timestamp objects correctly to prevent white screen.
 // ============================================================================
 
 "use client";
 import React, { useEffect, useState } from "react";
 import { KnowledgeService, KnowledgeDoc, IngestLog } from "@/lib/api/knowledge";
-import { 
-  Upload, Trash2, FileText, Database, Loader2, 
-  Download, Check, LayoutGrid, Clock, Activity, 
-  Globe, Search, Link as LinkIcon
+import {
+    Upload, Trash2, FileText, Database, Loader2,
+    Download, Check, LayoutGrid, Clock, Activity,
+    Globe, Search, Link as LinkIcon
 } from "lucide-react";
 
 export default function AdminKnowledgePage() {
@@ -21,7 +22,7 @@ export default function AdminKnowledgePage() {
     return (
         <div className="max-w-5xl mx-auto space-y-8">
             {/* HEADER */}
-<header className="border-b border-white/10 pb-6 flex justify-between items-end">
+            <header className="border-b border-white/10 pb-6 flex justify-between items-end">
                 <div>
                     <h1 className="text-3xl font-bold text-white tracking-tight mb-2 flex items-center gap-3">
                         <Database className="text-cyan-500" />
@@ -31,7 +32,7 @@ export default function AdminKnowledgePage() {
                         Manage the AI's brain. Upload global documents or ingest external datasets.
                     </p>
                 </div>
-                
+
                 {/* دکمه دانلود دیتاست */}
                 <button 
                     onClick={() => window.open('/api/admin/export-dataset', '_blank')}
@@ -75,7 +76,7 @@ export default function AdminKnowledgePage() {
 }
 
 // ------------------------------------------------------------------
-// VIEW 1: FILES (Existing)
+// VIEW 1: FILES (Bug Fix Here)
 // ------------------------------------------------------------------
 function FilesView() {
     const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
@@ -127,7 +128,19 @@ function FilesView() {
             <div className="bg-black/40 border border-white/10 rounded-xl overflow-hidden divide-y divide-white/5">
                 {docs.map((doc) => (
                     <div key={doc.id} className="p-4 flex justify-between hover:bg-white/5 transition">
-                        <div className="flex gap-4 items-center"><FileText size={20} className="text-cyan-500" /><span className="text-white text-sm">{doc.name}</span></div>
+                        <div className="flex gap-4 items-center">
+                            <FileText size={20} className="text-cyan-500" />
+                            <div>
+                                <p className="text-white text-sm font-medium">{doc.name}</p>
+                                {/* 🟢 BUG FIX: Safe Date Rendering */}
+                                <p className="text-xs text-slate-500 font-mono">
+                                    {doc.createdAt && doc.createdAt.seconds 
+                                        ? new Date(doc.createdAt.seconds * 1000).toLocaleDateString() 
+                                        : "Just now"} 
+                                    • {doc.mimeType}
+                                </p>
+                            </div>
+                        </div>
                         <button onClick={() => doc.id && handleDelete(doc.id)} className="text-slate-600 hover:text-red-400"><Trash2 size={18} /></button>
                     </div>
                 ))}
@@ -137,7 +150,7 @@ function FilesView() {
 }
 
 // ------------------------------------------------------------------
-// VIEW 2: DATASETS (Existing)
+// VIEW 2: DATASETS
 // ------------------------------------------------------------------
 function DatasetsView() {
     const [datasetName, setDatasetName] = useState("");
@@ -183,7 +196,7 @@ function DatasetsView() {
 }
 
 // ------------------------------------------------------------------
-// VIEW 3: SCRAPER (NEW!)
+// VIEW 3: SCRAPER
 // ------------------------------------------------------------------
 function ScraperView() {
     const [url, setUrl] = useState("");
@@ -195,7 +208,6 @@ function ScraperView() {
 
     const refreshHistory = async () => {
         if (KnowledgeService.getIngestLogs) {
-            // فیلتر کردن لاگ‌ها برای نشان دادن فقط اسکرپرها (اختیاری)
             const logs = await KnowledgeService.getIngestLogs();
             setHistory(logs.filter(l => l.source === "Web Scraper"));
         }
@@ -265,13 +277,12 @@ function ScraperView() {
                 </div>
             </div>
 
-            {/* History Table Reuse */}
             <HistoryTable history={history} title="Scraping History" color="orange" />
         </div>
     );
 }
 
-// --- SHARED: HISTORY TABLE COMPONENT ---
+// --- SHARED: HISTORY TABLE COMPONENT (Bug Fix Here) ---
 function HistoryTable({ history, title = "History", color = "purple" }: { history: IngestLog[], title?: string, color?: string }) {
     return (
         <div className="bg-black border border-white/10 rounded-xl overflow-hidden">
@@ -293,7 +304,13 @@ function HistoryTable({ history, title = "History", color = "purple" }: { histor
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-4 mt-1 text-xs text-slate-500 font-mono">
-                                    <span className="flex items-center gap-1"><Clock size={12}/> {item.timestamp?.seconds ? new Date(item.timestamp.seconds * 1000).toLocaleString() : "Just now"}</span>
+                                    {/* 🟢 BUG FIX: Safe Date Rendering */}
+                                    <span className="flex items-center gap-1">
+                                        <Clock size={12}/> 
+                                        {item.timestamp && item.timestamp.seconds 
+                                            ? new Date(item.timestamp.seconds * 1000).toLocaleString() 
+                                            : "Just now"}
+                                    </span>
                                     <span>Source: {item.source || "Unknown"}</span>
                                 </div>
                             </div>

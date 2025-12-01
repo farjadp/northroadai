@@ -6,33 +6,30 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // 1. تعداد کل دانش‌ها (Vectors)
-    // نکته: count() در فایربیس بهینه است
-    const kbSnapshot = await adminDb.collection("knowledge_base").count().get();
-    const totalVectors = kbSnapshot.data().count;
-
-    // 2. آمار استفاده (Hits)
-    const statsDoc = await adminDb.collection("system_stats").doc("global").get();
-    let ragPercentage = 0;
-    let totalQueries = 0;
-
-    if (statsDoc.exists) {
-        const data = statsDoc.data();
-        totalQueries = data?.total_queries || 0;
-        const ragHits = data?.rag_hits || 0;
-        
-        if (totalQueries > 0) {
-            ragPercentage = Math.round((ragHits / totalQueries) * 100);
-        }
+    // اگر ادمین دیتابیس وصل نبود، دیتای خالی بفرست تا سایت کرش نکند
+    if (!adminDb) {
+      return NextResponse.json({ 
+        users: 0, 
+        chats: 0, 
+        knowledge: 0 
+      });
     }
 
+    // گرفتن تعداد حدودی داکیومنت‌ها (Count Queries)
+    // نکته: این روش بهینه است و هزینه کمی دارد
+    const usersCount = (await adminDb.collection("users").count().get()).data().count;
+    const chatsCount = (await adminDb.collection("guest_chats").count().get()).data().count;
+    const knowledgeCount = (await adminDb.collection("knowledge_base").count().get()).data().count;
+
     return NextResponse.json({
-        totalVectors,
-        ragPercentage,
-        totalQueries
+      users: usersCount,
+      chats: chatsCount,
+      knowledge: knowledgeCount
     });
 
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Stats API Error:", error);
+    // در صورت ارور، دیتای صفر برمی‌گردانیم تا صفحه سفید نشود
+    return NextResponse.json({ users: 0, chats: 0, knowledge: 0 });
   }
 }
