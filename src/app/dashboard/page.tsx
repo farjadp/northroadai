@@ -1,12 +1,12 @@
 // ============================================================================
 // 📁 Hardware Source: src/app/dashboard/page.tsx
 // 🕒 Date: 2025-11-30
-// 🧠 Version: v2.1 (Mission Control - Fixed Icons Rendering)
+// 🧠 Version: v2.3 (Full Integrity + Crash Protection)
 // ----------------------------------------------------------------------------
 // ✅ Logic:
-// - Fetches Startup DNA and Chat Sessions from Firestore.
-// - Handles Agent Icon components correctly (LucideIcon).
-// - Lists recent sessions with agent context and quick-deploy actions.
+// - Full preservation of UI components (Header, Signals, Quick Deploy).
+// - Safe Date handling for Firestore timestamps.
+// - Safe Icon rendering for Lucide components.
 // ============================================================================
 
 "use client";
@@ -96,8 +96,15 @@ export default function MissionControl() {
   };
 
   const formatRelativeTime = (date: any) => {
+    // 🛡️ Safety Check: If date is missing, don't crash
+    if (!date) return "Just now";
+    
     // Handle Firestore Timestamp or Date object
     const d = date?.toDate ? date.toDate() : new Date(date);
+    
+    // Invalid Date Check
+    if (isNaN(d.getTime())) return "Just now";
+
     const diff = Date.now() - d.getTime();
     const minutes = Math.floor(diff / 60000);
     if (minutes < 1) return "just now";
@@ -145,6 +152,7 @@ export default function MissionControl() {
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
+      
       {/* --- SECTION 1: HEADER --- */}
       <motion.section variants={cardVariants} className="relative">
         <div className="flex flex-col md:flex-row justify-between items-end mb-6">
@@ -184,6 +192,7 @@ export default function MissionControl() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Hero Card */}
           <div className="lg:col-span-2 group relative bg-gradient-to-r from-blue-900/10 to-purple-900/10 border border-white/10 rounded-2xl p-1 overflow-hidden hover:border-cyan-500/30 transition-all duration-500">
             <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
@@ -205,6 +214,7 @@ export default function MissionControl() {
             </div>
           </div>
 
+          {/* DNA Stats Card */}
           <div className="bg-black/40 border border-white/10 rounded-2xl p-5">
             <h4 className="text-white font-semibold mb-3">Profile Readiness</h4>
             {dnaLoading ? (
@@ -220,9 +230,8 @@ export default function MissionControl() {
         </div>
       </motion.section>
 
-
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
         {/* --- SECTION 2: ACTIVE OPERATIONS --- */}
         <motion.div variants={cardVariants} className="lg:col-span-2 space-y-6">
           <div className="flex items-center gap-2 text-sm font-mono text-slate-500 uppercase tracking-widest">
@@ -241,14 +250,13 @@ export default function MissionControl() {
             ) : (
               sessions.map((session) => {
                 const agent = getAgentById(session.agentId);
-                // ✅ اصلاح مهم: دریافت آیکون به عنوان کامپوننت
-                const AgentIcon = agent?.icon || Compass; // فال‌بک به Compass اگر آیکون نبود
+                // 🟢 FIXED: Capitalized for React Component
+                const AgentIcon = agent?.icon || Compass;
 
                 return (
                   <Link key={session.id} href={`/dashboard/chat?session=${session.id}`}>
                     <div className="p-5 rounded-xl border border-white/10 bg-black/40 hover:border-cyan-500/30 hover:bg-white/5 transition-all cursor-pointer space-y-2 group">
                       <div className="flex items-center gap-2 text-sm text-slate-400">
-                        {/* رندر کردن کامپوننت آیکون */}
                         <div className={`${agent?.colorClass || "text-slate-500"} group-hover:scale-110 transition-transform`}>
                             <AgentIcon size={18} />
                         </div>
@@ -303,8 +311,6 @@ export default function MissionControl() {
         </motion.div>
       </div>
 
-
-
       {/* --- SECTION 4: QUICK DEPLOY --- */}
       <motion.section variants={cardVariants} className="space-y-4">
         <div className="flex items-center gap-2 text-sm font-mono text-slate-500 uppercase tracking-widest">
@@ -313,7 +319,7 @@ export default function MissionControl() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {QUICK_DEPLOY.map((id) => {
             const agent = getAgentById(id);
-            // ✅ اصلاح مهم: دریافت آیکون به عنوان کامپوننت
+            // 🟢 FIXED: Capitalized for React Component
             const AgentIcon = agent?.icon || Compass;
 
             return (
@@ -351,21 +357,17 @@ export default function MissionControl() {
         </div>
       </motion.section>
 
-
       {/* --- SECTION 5: NEURAL ENGINE STATUS --- */}
       <div className="mb-8">
-   <h2 className="text-xl font-bold text-white mb-4">Neural Engine Status</h2>
-   <BrainStats variant="full" />
-</div>
-
-
+        <h2 className="text-xl font-bold text-white mb-4">Neural Engine Status</h2>
+        <BrainStats variant="full" />
+      </div>
 
     </motion.div>
-
-    
   );
 }
 
+// --- HELPER COMPONENT ---
 function SignalItem({ icon, title, body, time }: { icon: React.ReactNode; title: string; body: string; time: string }) {
   return (
     <div className="p-4 hover:bg-white/5 transition cursor-default">

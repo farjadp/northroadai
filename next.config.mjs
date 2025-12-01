@@ -1,14 +1,27 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // برای Cloud Run و Docker حیاتی است
   output: "standalone",
-  
-  // تنظیمات نادیده گرفتن خطاها در بیلد (برای جلوگیری از فیل شدن بیلد)
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com', // عکس پروفایل گوگل
+      },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com', // عکس‌های آپلود شده
+      },
+      {
+        protocol: 'https',
+        hostname: 'graph.facebook.com', // اگر فیسبوک دارید
+      },
+    ],
   },
 };
 
