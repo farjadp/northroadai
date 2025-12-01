@@ -25,7 +25,7 @@ export const calculateProfileScore = (dna: Partial<StartupProfile> | null | unde
   ];
 
   const filled = fields.reduce((acc, key) => {
-    const value = (dna as any)[key];
+    const value = (dna as Record<string, unknown>)[key];
     if (key === "industryTags") {
       return acc + (Array.isArray(value) && value.length > 0 ? 1 : 0);
     }

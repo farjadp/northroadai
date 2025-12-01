@@ -135,8 +135,8 @@ export default function AgentArmory() {
                 <div>
                     <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight mb-2">Neural Armory</h1>
                     <p className="text-slate-400 font-mono text-sm max-w-2xl">
-                        Deploy specialized AI agents tailored to your startup's lifecycle.
-                        Each agent accesses your "Startup DNA" for context-aware reasoning.
+                        Deploy specialized AI agents tailored to your startup&apos;s lifecycle.
+                        Each agent accesses your &quot;Startup DNA&quot; for context-aware reasoning.
                     </p>
                 </div>
 
@@ -184,8 +184,8 @@ export default function AgentArmory() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {AGENTS.map((agent) => {
                     const unlocked = hasAccess(agent.minTier);
-                    // Mock random usage for visual effect
-                    const usagePercent = Math.floor(Math.random() * 60) + 10;
+                    // Deterministic pseudo-usage based on agent id for stable render
+                    const usagePercent = (agent.id.charCodeAt(0) % 50) + 10;
 
                     return (
                         <motion.div

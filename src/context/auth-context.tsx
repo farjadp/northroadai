@@ -27,6 +27,7 @@ interface AuthContextType {
   userTier: UserTier | null;
   userRole: UserRole;
   isAdmin: boolean;
+  isMentor: boolean;
   unlockedAgents: string[];
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
@@ -118,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       userTier,
       userRole,
       isAdmin: userRole === "admin",
+      isMentor: userRole === "mentor",
       unlockedAgents,
       loginWithGoogle,
       logout,

@@ -3,7 +3,7 @@ import * as admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as path from "path";
-import * as dotenv from "dotenv";
+import { readFileSync } from "fs";
 
 // 1. کانفیگ‌ها
 const SERVICE_ACCOUNT_PATH = path.join(process.cwd(), "service-account.json");
@@ -31,7 +31,7 @@ async function main() {
   // 2. اتصال به فایربیس (ادمین)
   if (!admin.apps.length) {
     admin.initializeApp({
-      credential: admin.credential.cert(require(SERVICE_ACCOUNT_PATH)),
+      credential: admin.credential.cert(JSON.parse(readFileSync(SERVICE_ACCOUNT_PATH, "utf8"))),
     });
   }
   const db = getFirestore();

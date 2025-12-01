@@ -1,385 +1,552 @@
+// src/app/dashboard/profile/page.tsx
 // ============================================================================
 // 📁 Hardware Source: src/app/dashboard/profile/page.tsx
-// 🕒 Date: 2025-11-29 15:10
-// 🧠 Version: v2.1 (The Genome Editor - Connected)
+// 🕒 Date: 2025-11-30
+// 🧠 Version: v3.0 (Adaptive Genome Editor)
 // ----------------------------------------------------------------------------
-// ✅ What changed vs v2.0:
-// 1) Integrated Firebase Firestore via '@/lib/api/startup'.
-// 2) Added useEffect to fetch existing DNA on load.
-// 3) Wired all inputs to 'formData' state.
-// 4) 'Synthesize' button now actually saves data to the cloud.
-// 5) Added 'isLoading' skeleton state for initial fetch.
-//
-// 📝 Notes:
-// - Uses 'lucide-react' Dna, Microscope, Binary icons.
-// - The vertical line represents the "Backbone" of the startup's RNA.
+// ✅ Logic:
+// - Adaptive Profile form based on Startup Stage (Idea, MVP, Growth).
+// - Gamified "Neural Synchronization" score.
+// - Founder Archetype selection.
 // ============================================================================
 
 "use client";
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { useAuth } from "@/context/auth-context"; // اتصال به کاربر
-import { saveStartupDNA, getStartupDNA, StartupProfile } from "@/lib/api/startup"; // اتصال به API
-import { 
-  Dna, 
-  Microscope, 
-  Binary, 
-  Activity, 
-  Zap, 
-  Save, 
-  CheckCircle2,
-  AlertOctagon,
-  Loader2
-} from "lucide-react";
 
-// --- DNA SPINNER COMPONENT ---
-const DnaSpinner = () => (
-  <div className="flex gap-1 h-8 items-center opacity-80">
-    {[...Array(5)].map((_, i) => (
-      <motion.div
-        key={i}
-        animate={{ 
-          height: [10, 25, 10], 
-          backgroundColor: ["#a855f7", "#06b6d4", "#a855f7"] 
-        }}
-        transition={{ 
-          duration: 1.5, 
-          repeat: Infinity, 
-          delay: i * 0.2,
-          ease: "easeInOut"
-        }}
-        className="w-1.5 rounded-full bg-cyan-500"
-      />
-    ))}
-  </div>
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+    Terminal,
+    TrendingUp,
+    Lightbulb,
+    Dna,
+    Save,
+    AlertCircle,
+    CheckCircle2,
+    Binary,
+    Scan,
+    Cpu
+} from "lucide-react";
+import { useAuth } from "@/context/auth-context";
+// فرض بر این است که فایل lib/api/startup دارید، اگر ندارید از همان روش مستقیم فایربیس که قبلا داشتیم استفاده کنید
+// فعلا برای اطمینان از کارکرد، ایمپورت‌های مستقیم فایربیس را نگه میدارم
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
+// --- Types ---
+type Stage = "Idea" | "MVP" | "Growth";
+type Archetype = "Hacker" | "Hustler" | "Visionary";
+
+export interface StartupProfile {
+    name?: string;
+    oneLiner?: string;
+    problem?: string;
+    targetAudience?: string;
+    hypothesis?: string;
+    launchDate?: string;
+    earlyUsers?: string;
+    feedback?: string;
+    mrr?: string;
+    burnRate?: string;
+    cac?: string;
+    runway?: string;
+    northStarBlocker?: string;
+    stage?: string;
+    archetype?: string;
+}
+
+// --- Components ---
+
+const StageSelector = ({ currentStage, setStage }: { currentStage: Stage, setStage: (s: Stage) => void }) => {
+    const stages: Stage[] = ["Idea", "MVP", "Growth"];
+
+    return (
+        <div className="relative w-full border-t border-b border-teal-900/30 bg-black/40 backdrop-blur-sm mb-12">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-teal-500 to-transparent opacity-50 animate-pulse" />
+
+            <div className="flex justify-between items-center max-w-3xl mx-auto">
+                {stages.map((stage, index) => {
+                    const isActive = currentStage === stage;
+                    return (
+                        <button
+                            key={stage}
+                            onClick={() => setStage(stage)}
+                            className="group relative px-8 py-6 flex flex-col items-center justify-center focus:outline-none"
+                        >
+                            {index !== stages.length - 1 && (
+                                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full h-[1px] bg-teal-900/30 -z-10 translate-x-[50%]" />
+                            )}
+
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${isActive
+                                    ? "border-teal-400 bg-teal-950 shadow-[0_0_15px_rgba(45,212,191,0.6)] scale-125"
+                                    : "border-teal-900 bg-black group-hover:border-teal-700"
+                                }`}>
+                                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />}
+                            </div>
+
+                            <span className={`mt-3 text-[10px] font-mono uppercase tracking-[0.2em] transition-colors duration-300 ${isActive ? "text-teal-400 font-bold" : "text-teal-900 group-hover:text-teal-700"
+                                }`}>
+                                {stage}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+const ArchetypeCard = ({
+    type,
+    selected,
+    onSelect,
+    icon: Icon,
+    desc,
+    subtitle
+}: {
+    type: Archetype,
+    selected: boolean,
+    onSelect: () => void,
+    icon: any,
+    desc: string,
+    subtitle: string
+}) => (
+    <div
+        onClick={onSelect}
+        className={`cursor-pointer relative overflow-hidden transition-all duration-500 p-1 group ${selected ? "opacity-100" : "opacity-60 hover:opacity-80"
+            }`}
+    >
+        <div className={`absolute inset-0 border transition-all duration-300 ${selected
+                ? "border-teal-500 bg-teal-950/10 shadow-[inset_0_0_20px_rgba(45,212,191,0.1)]"
+                : "border-teal-900/30 bg-transparent group-hover:border-teal-800"
+            }`} />
+
+        {selected && (
+            <div className="absolute top-0 right-0 p-1 bg-teal-500 text-black">
+                <CheckCircle2 size={10} />
+            </div>
+        )}
+
+        <div className="relative z-10 p-4 flex flex-col items-center text-center gap-2">
+            <div className={`p-3 rounded-full border transition-all duration-300 ${selected
+                    ? "bg-teal-500/10 border-teal-500 text-teal-400"
+                    : "bg-black border-teal-900 text-teal-900"
+                }`}>
+                <Icon size={20} strokeWidth={1.5} />
+            </div>
+            <div>
+                <h3 className={`font-mono text-sm uppercase tracking-widest mb-1 ${selected ? "text-white" : "text-slate-500"}`}>
+                    {type}
+                </h3>
+                <p className="text-[9px] text-teal-600 font-bold uppercase tracking-wide mb-1">{subtitle}</p>
+                <p className="text-[10px] text-slate-500 font-mono leading-relaxed max-w-[200px] mx-auto opacity-80">
+                    {desc}
+                </p>
+            </div>
+        </div>
+
+        <div className="absolute bottom-1 left-1 w-2 h-2 border-b border-l border-current text-teal-800" />
+        <div className="absolute top-1 right-1 w-2 h-2 border-t border-r border-current text-teal-800" />
+    </div>
 );
 
-// --- SECTIONS ANIMATION ---
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { 
-    opacity: 1, 
-    transition: { staggerChildren: 0.15 } 
-  }
-};
+const InputField = ({
+    label,
+    value,
+    onChange,
+    placeholder,
+    type = "text",
+    textarea = false
+}: {
+    label: string,
+    value: string,
+    onChange: (val: string) => void,
+    placeholder: string,
+    type?: string,
+    textarea?: boolean
+}) => (
+    <div className="group relative mb-6">
+        <label className="flex items-center gap-2 text-[10px] font-mono uppercase text-teal-700 tracking-widest mb-2 group-focus-within:text-teal-400 transition-colors">
+            <Binary size={12} /> {label}
+        </label>
 
-const geneVariants = {
-  hidden: { x: -20, opacity: 0 },
-  visible: { x: 0, opacity: 1 }
-};
+        <div className="relative">
+            {textarea ? (
+                <textarea
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder={placeholder}
+                    rows={3}
+                    className="w-full bg-black border border-teal-900/30 px-4 py-3 text-sm text-teal-50 placeholder:text-teal-900/30 focus:outline-none focus:border-teal-500/50 focus:shadow-[0_0_15px_rgba(20,184,166,0.1)] transition-all font-sans resize-none leading-relaxed"
+                />
+            ) : (
+                <input
+                    type={type}
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder={placeholder}
+                    className="w-full bg-black border border-teal-900/30 px-4 py-3 text-sm text-teal-50 placeholder:text-teal-900/30 focus:outline-none focus:border-teal-500/50 focus:shadow-[0_0_15px_rgba(20,184,166,0.1)] transition-all font-sans"
+                />
+            )}
 
-export default function StartupDNA() {
-  const { user } = useAuth();
-  const [isSynthesizing, setIsSynthesizing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [sequencingProgress, setSequencingProgress] = useState(0);
-  
-  // State اصلی برای نگهداری داده‌های فرم
-  const [formData, setFormData] = useState<Partial<StartupProfile>>({
-    name: "",
-    url: "",
-    oneLiner: "",
-    burnRate: "",
-    runway: "",
-    teamSize: "",
-  });
-
-  // 1. دریافت داده‌ها هنگام لود صفحه
-  useEffect(() => {
-    async function fetchData() {
-      if (user) {
-        const data = await getStartupDNA(user.uid);
-        if (data) {
-          setFormData(data);
-          // محاسبه درصد تکمیل پروفایل
-          const filledFields = Object.values(data).filter(v => v && v.toString().length > 0).length;
-          const totalFields = 6; // تعداد فیلدهای مهم
-          setSequencingProgress(Math.min(Math.round((filledFields / totalFields) * 100), 100));
-        }
-        setIsLoading(false);
-      }
-    }
-    fetchData();
-  }, [user]);
-
-  // هندلر تغییر اینپوت‌ها
-  const handleInputChange = (field: keyof StartupProfile, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  // 2. ذخیره داده‌ها در فایربیس
-  const handleSynthesize = async () => {
-    if (!user) return;
-    setIsSynthesizing(true);
-    
-    // شبیه‌سازی انیمیشن سکوئنسینگ
-    let p = sequencingProgress;
-    const interval = setInterval(() => {
-        p += 5;
-        if (p >= 100) p = 99; // صبر کن تا ذخیره واقعی تمام شود
-        setSequencingProgress(p);
-    }, 100);
-
-    // ذخیره واقعی
-    await saveStartupDNA(user.uid, {
-        ...formData,
-        stage: "Idea Phase", // می‌توان بعداً داینامیک کرد
-    });
-
-    clearInterval(interval);
-    setSequencingProgress(100);
-    
-    setTimeout(() => {
-        setIsSynthesizing(false);
-        // اینجا می‌توان تست (Toast) موفقیت نمایش داد
-    }, 800);
-  };
-
-  if (isLoading) {
-      return (
-          <div className="min-h-[60vh] flex flex-col items-center justify-center text-slate-500">
-              <DnaSpinner />
-              <p className="mt-4 font-mono text-sm animate-pulse">Accessing Genome Database...</p>
-          </div>
-      );
-  }
-
-  return (
-    <div className="relative min-h-[80vh]">
-      
-      {/* BACKGROUND ELEMENTS (Grid & Hexagons) */}
-      <div className="absolute inset-0 pointer-events-none opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-      <div className="absolute top-20 right-10 opacity-10 text-purple-500 animate-pulse">
-        <Dna size={400} strokeWidth={0.5} />
-      </div>
-
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="relative z-10 max-w-5xl mx-auto"
-      >
-        
-        {/* --- HEADER: SEQUENCER STATUS --- */}
-        <motion.div variants={geneVariants} className="flex flex-col md:flex-row justify-between items-end border-b border-white/10 pb-8 mb-12 gap-6">
-            <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-white/10 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(168,85,247,0.2)]">
-                    <Microscope size={32} className="text-purple-400" />
-                </div>
-                <div>
-                    <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-purple-400 tracking-tight">
-                        Startup Genome
-                    </h1>
-                    <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-mono text-cyan-400 bg-cyan-950/30 px-2 py-0.5 rounded border border-cyan-500/20">
-                            SEQUENCE: ACTIVE
-                        </span>
-                        <span className="text-xs font-mono text-slate-500">
-                            ID: #{user?.uid.slice(0, 8).toUpperCase()}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            {/* PROGRESS DNA BAR */}
-            <div className="w-full md:w-auto text-right">
-                 <div className="flex justify-between md:justify-end items-center gap-4 mb-2">
-                    <DnaSpinner />
-                    <span className="font-mono text-2xl font-bold text-white">{sequencingProgress}%</span>
-                 </div>
-                 <div className="w-full md:w-64 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                    <motion.div 
-                        initial={{ width: "0%" }}
-                        animate={{ width: `${sequencingProgress}%` }}
-                        className="h-full bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 shadow-[0_0_15px_rgba(168,85,247,0.8)]"
-                    />
-                 </div>
-                 <p className="text-[10px] text-purple-400/80 font-mono mt-1 tracking-widest uppercase">
-                    {isSynthesizing ? "Synthesizing RNA..." : "Ready for Mutation"}
-                 </p>
-            </div>
-        </motion.div>
-
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-            
-            {/* --- LEFT COLUMN: THE HELIX SPINE (Timeline/Structure) --- */}
-            <div className="hidden lg:block lg:col-span-1 relative">
-                {/* The Spine Line */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-0 h-full w-px bg-gradient-to-b from-purple-500/50 via-cyan-500/50 to-transparent"></div>
-                
-                {/* Nodes */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-0 w-3 h-3 bg-purple-500 rounded-full shadow-[0_0_10px_#a855f7]"></div>
-                <div className="absolute left-1/2 -translate-x-1/2 top-[200px] w-3 h-3 bg-cyan-500 rounded-full shadow-[0_0_10px_#06b6d4]"></div>
-                <div className="absolute left-1/2 -translate-x-1/2 top-[400px] w-3 h-3 bg-pink-500 rounded-full shadow-[0_0_10px_#ec4899]"></div>
-            </div>
-
-            {/* --- MIDDLE COLUMN: GENE EDITOR (Inputs) --- */}
-            <div className="lg:col-span-8 space-y-12">
-                
-                {/* CHROMOSOME 1: IDENTITY */}
-                <motion.section variants={geneVariants} className="relative group">
-                    <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-full"></div>
-                    
-                    <h3 className="flex items-center gap-2 text-sm font-mono text-purple-400 uppercase tracking-widest mb-6">
-                        <Binary size={16}/> Chromosome 01 // Identity
-                    </h3>
-
-                    <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-1 overflow-hidden">
-                        <div className="grid grid-cols-1 divide-y divide-white/5">
-                            {/* Entity Name */}
-                            <div className="p-4 flex flex-col md:flex-row gap-4 items-start md:items-center hover:bg-white/5 transition-colors">
-                                <label className="w-32 text-xs font-mono text-slate-500 uppercase">Entity Name</label>
-                                <div className="flex-1 flex items-center gap-2">
-                                    <span className="text-purple-500 font-mono">{`>`}</span>
-                                    <input 
-                                        type="text" 
-                                        value={formData.name}
-                                        onChange={(e) => handleInputChange("name", e.target.value)}
-                                        placeholder="Enter Startup Name"
-                                        className="flex-1 bg-transparent text-white outline-none font-medium placeholder:text-slate-700" 
-                                    />
-                                </div>
-                                {formData.name && <Activity size={14} className="text-green-500 hidden md:block" />}
-                            </div>
-
-                            {/* Origin URL */}
-                            <div className="p-4 flex flex-col md:flex-row gap-4 items-start md:items-center hover:bg-white/5 transition-colors">
-                                <label className="w-32 text-xs font-mono text-slate-500 uppercase">Origin URL</label>
-                                <div className="flex-1 flex items-center gap-2">
-                                    <span className="text-purple-500 font-mono">{`>`}</span>
-                                    <input 
-                                        type="text" 
-                                        value={formData.url}
-                                        onChange={(e) => handleInputChange("url", e.target.value)}
-                                        placeholder="https://..." 
-                                        className="flex-1 bg-transparent text-white outline-none font-medium placeholder:text-slate-700" 
-                                    />
-                                </div>
-                            </div>
-                            
-                            {/* Mission (One Liner) */}
-                            <div className="p-4 flex flex-col gap-2 hover:bg-white/5 transition-colors">
-                                <label className="text-xs font-mono text-slate-500 uppercase flex justify-between">
-                                    <span>Core Mutation (Mission)</span>
-                                    <span className="text-[10px] text-purple-400">MAX 140 CHARS</span>
-                                </label>
-                                <div className="flex gap-2">
-                                    <span className="text-purple-500 font-mono mt-1">{`//`}</span>
-                                    <textarea 
-                                        value={formData.oneLiner}
-                                        onChange={(e) => handleInputChange("oneLiner", e.target.value)}
-                                        className="w-full bg-transparent text-white outline-none h-20 resize-none leading-relaxed placeholder:text-slate-700" 
-                                        placeholder="Define the primary problem you are solving..."
-                                    ></textarea>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </motion.section>
-
-
-                {/* CHROMOSOME 2: METRICS */}
-                <motion.section variants={geneVariants} className="relative group">
-                    <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-cyan-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-full"></div>
-
-                    <h3 className="flex items-center gap-2 text-sm font-mono text-cyan-400 uppercase tracking-widest mb-6">
-                        <Activity size={16}/> Chromosome 02 // Vital Signs
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-cyan-500/50 transition-colors group/card">
-                            <div className="text-[10px] font-mono text-slate-500 uppercase mb-2">Burn Rate</div>
-                            <div className="flex items-end gap-2">
-                                <input 
-                                    type="text" 
-                                    value={formData.burnRate}
-                                    onChange={(e) => handleInputChange("burnRate", e.target.value)}
-                                    placeholder="0" 
-                                    className="w-full bg-transparent text-2xl font-bold text-white outline-none border-b border-transparent group-hover/card:border-cyan-500/30 pb-1" 
-                                />
-                                <span className="text-xs text-cyan-500 font-mono mb-2">$/mo</span>
-                            </div>
-                        </div>
-
-                        <div className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-cyan-500/50 transition-colors group/card">
-                            <div className="text-[10px] font-mono text-slate-500 uppercase mb-2">Runway</div>
-                            <div className="flex items-end gap-2">
-                                <input 
-                                    type="text" 
-                                    value={formData.runway}
-                                    onChange={(e) => handleInputChange("runway", e.target.value)}
-                                    placeholder="0" 
-                                    className="w-full bg-transparent text-2xl font-bold text-white outline-none border-b border-transparent group-hover/card:border-cyan-500/30 pb-1" 
-                                />
-                                <span className="text-xs text-cyan-500 font-mono mb-2">Months</span>
-                            </div>
-                        </div>
-
-                        <div className="bg-black/40 border border-white/10 rounded-xl p-4 hover:border-cyan-500/50 transition-colors group/card">
-                            <div className="text-[10px] font-mono text-slate-500 uppercase mb-2">Headcount</div>
-                            <div className="flex items-end gap-2">
-                                <input 
-                                    type="text" 
-                                    value={formData.teamSize}
-                                    onChange={(e) => handleInputChange("teamSize", e.target.value)}
-                                    placeholder="1" 
-                                    className="w-full bg-transparent text-2xl font-bold text-white outline-none border-b border-transparent group-hover/card:border-cyan-500/30 pb-1" 
-                                />
-                                <span className="text-xs text-cyan-500 font-mono mb-2">Nodes</span>
-                            </div>
-                        </div>
-                    </div>
-                </motion.section>
-
-            </div>
-
-            {/* --- RIGHT COLUMN: ACTIONS (Control Panel) --- */}
-            <div className="lg:col-span-3 space-y-6">
-                
-                {/* Warning Card */}
-                {(!formData.burnRate || !formData.runway) && (
-                    <motion.div variants={geneVariants} className="p-4 bg-orange-900/10 border border-orange-500/20 rounded-xl">
-                        <div className="flex items-start gap-3">
-                            <AlertOctagon size={18} className="text-orange-400 shrink-0 mt-0.5" />
-                            <div>
-                                <h4 className="text-xs font-bold text-orange-400 uppercase mb-1">Incomplete Strand</h4>
-                                <p className="text-[10px] text-orange-200/70 leading-relaxed">
-                                    Financial model data is missing. AI predictions will be 40% less accurate without burn rate history.
-                                </p>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Main Action */}
-                <motion.button
-                    variants={geneVariants} 
-                    onClick={handleSynthesize}
-                    disabled={isSynthesizing}
-                    className="w-full group relative overflow-hidden bg-white text-black h-14 rounded-xl font-bold tracking-wide uppercase text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <span className="relative z-10 flex items-center justify-center gap-2">
-                         {isSynthesizing ? (
-                             <Loader2 className="animate-spin" size={18}/>
-                         ) : (
-                             <Zap size={18} className="fill-black"/>
-                         )}
-                         {isSynthesizing ? "Synthesizing..." : "Synthesize Genome"}
-                    </span>
-                </motion.button>
-                
-                {formData.name && (
-                    <p className="text-[10px] text-center text-green-500 font-mono flex items-center justify-center gap-1">
-                        <CheckCircle2 size={10} /> SYSTEM SYNCED
-                    </p>
-                )}
-
-            </div>
-
+            <div className="absolute right-2 top-3 w-1.5 h-1.5 bg-teal-500/20 group-focus-within:bg-teal-500 group-focus-within:animate-pulse rounded-full transition-colors" />
         </div>
-      </motion.div>
     </div>
-  );
+);
+
+const CalibrationBar = ({ score }: { score: number }) => {
+    return (
+        <div className="mb-12 grid grid-cols-[auto_1fr_auto] gap-4 items-center">
+            <div className="w-12 h-12 border border-teal-900/50 bg-black flex items-center justify-center relative overflow-hidden">
+                <Dna size={24} className={`text-teal-500 ${score < 100 ? "animate-spin-slow" : ""}`} />
+                <div className="absolute inset-0 bg-teal-500/10 h-[10%] animate-scan" />
+            </div>
+
+            <div className="relative h-10 bg-black border border-teal-900/30 flex items-center px-1 overflow-hidden">
+                <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent,transparent_4px,rgba(20,184,166,0.1)_4px,rgba(20,184,166,0.1)_5px)]" />
+
+                <motion.div
+                    className="h-6 bg-teal-500/20 border-r-2 border-teal-400 relative z-10"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${score}%` }}
+                    transition={{ duration: 1.5, ease: "anticipate" }}
+                >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-teal-500/30" />
+                </motion.div>
+
+                <div className="absolute right-4 text-[10px] font-mono text-teal-500 z-20">
+                    AI_CALIBRATION_STATUS
+                </div>
+            </div>
+
+            <div className="text-right w-16">
+                <span className="block text-2xl font-black text-white font-mono leading-none">{score}</span>
+                <span className="text-[9px] text-teal-700 font-mono tracking-widest">%</span>
+            </div>
+        </div>
+    );
+};
+
+export default function ProfilePage() {
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    // State
+    const [stage, setStage] = useState<Stage>("Idea");
+    const [archetype, setArchetype] = useState<Archetype | undefined>(undefined);
+    const [formData, setFormData] = useState<Partial<StartupProfile>>({});
+
+    // Load Data
+    useEffect(() => {
+        if (!user?.uid) return;
+
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const docRef = doc(db, "users", user.uid, "profile", "dna");
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    setFormData(data);
+                    if (data.stage) setStage(data.stage as Stage);
+                    if (data.archetype) setArchetype(data.archetype as Archetype);
+                }
+            } catch (e) { console.error(e); }
+            setLoading(false);
+        };
+
+        loadData();
+    }, [user]);
+
+    const handleChange = (field: keyof StartupProfile, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const calculateScore = () => {
+        let score = 0;
+        if (formData.name) score += 10;
+        if (formData.oneLiner) score += 10;
+        if (archetype) score += 15;
+        if (formData.northStarBlocker) score += 15;
+
+        if (stage === "Idea") {
+            if (formData.problem) score += 15;
+            if (formData.targetAudience) score += 15;
+            if (formData.hypothesis) score += 20;
+        } else if (stage === "MVP") {
+            if (formData.launchDate) score += 15;
+            if (formData.earlyUsers) score += 15;
+            if (formData.feedback) score += 20;
+        } else {
+            if (formData.mrr) score += 10;
+            if (formData.burnRate) score += 10;
+            if (formData.cac) score += 10;
+            if (formData.runway) score += 20;
+        }
+
+        return Math.min(100, score);
+    };
+
+    const handleSave = async () => {
+        if (!user?.uid) return;
+        setSaving(true);
+
+        const dataToSave: Partial<StartupProfile> = {
+            ...formData,
+            stage,
+            archetype,
+        };
+
+        try {
+            await setDoc(doc(db, "users", user.uid, "profile", "dna"), {
+                ...dataToSave,
+                updatedAt: new Date()
+            });
+            await setDoc(doc(db, "users", user.uid), {
+                context: `Startup: ${formData.name}, Stage: ${stage}, Archetype: ${archetype}`
+            }, { merge: true });
+        } catch (e) { console.error(e); }
+        setTimeout(() => setSaving(false), 800);
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center text-teal-500 font-mono">
+                <div className="flex flex-col items-center gap-4">
+                    <Scan className="animate-spin" size={32} />
+                    <p className="tracking-[0.5em] text-xs uppercase text-teal-700">Accessing Genome Database...</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-[#050505] text-slate-300 font-sans selection:bg-teal-500/20 selection:text-teal-200 pb-24 overflow-x-hidden">
+
+            {/* --- Background --- */}
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#0a0a0a_1px,transparent_1px),linear-gradient(to_bottom,#0a0a0a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-50" />
+                <div className="absolute inset-0 bg-radial-gradient from-transparent to-black" />
+            </div>
+
+            <div className="max-w-6xl mx-auto px-6 pt-16 relative z-10">
+
+                {/* --- Header --- */}
+                <div className="flex justify-between items-end mb-16 border-b border-teal-900/20 pb-6">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <span className="h-2 w-2 bg-teal-500 rounded-full animate-pulse" />
+                            <span className="text-[10px] font-mono text-teal-800 uppercase tracking-widest">System Online</span>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight uppercase">
+                            Startup <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-teal-700">DNA</span>
+                        </h1>
+                    </div>
+                    <div className="hidden sm:block text-right">
+                        <div className="font-mono text-[10px] text-teal-900">REF_CODE</div>
+                        <div className="font-mono text-lg text-teal-700">GEN-2042</div>
+                    </div>
+                </div>
+
+                {/* --- Main Content --- */}
+                <CalibrationBar score={calculateScore()} />
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+
+                    {/* LEFT COLUMN: Data Entry */}
+                    <div className="lg:col-span-8">
+                        <StageSelector currentStage={stage} setStage={setStage} />
+
+                        {/* Identity Module */}
+                        <div className="mb-12">
+                            <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <span className="w-1 h-4 bg-teal-500" /> Identity Core
+                            </h3>
+                            <div className="grid gap-2">
+                                <InputField
+                                    label="Startup Name"
+                                    placeholder="What do you call this project?"
+                                    value={formData.name || ""}
+                                    onChange={(v) => handleChange("name", v)}
+                                />
+                                <InputField
+                                    label="The One-Liner"
+                                    placeholder="e.g. Uber for Dog Walking in Canada"
+                                    value={formData.oneLiner || ""}
+                                    onChange={(v) => handleChange("oneLiner", v)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Metrics Module */}
+                        <div>
+                            <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <span className="w-1 h-4 bg-teal-500" /> Phase Metrics: {stage}
+                            </h3>
+
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={stage}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="bg-teal-950/5 border border-teal-900/20 p-6 relative"
+                                >
+                                    <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-teal-700" />
+                                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-teal-700" />
+
+                                    {stage === "Idea" && (
+                                        <div className="space-y-6">
+                                            <InputField
+                                                label="The Core Problem"
+                                                placeholder="What specific pain point are you solving?"
+                                                value={formData.problem || ""}
+                                                onChange={(v) => handleChange("problem", v)}
+                                                textarea
+                                            />
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <InputField
+                                                    label="Target Audience"
+                                                    placeholder="Who suffers the most from this?"
+                                                    value={formData.targetAudience || ""}
+                                                    onChange={(v) => handleChange("targetAudience", v)}
+                                                />
+                                                <InputField
+                                                    label="The Big Bet (Hypothesis)"
+                                                    placeholder="If we build X, then Y will happen..."
+                                                    value={formData.hypothesis || ""}
+                                                    onChange={(v) => handleChange("hypothesis", v)}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {stage === "MVP" && (
+                                        <div className="space-y-6">
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                <InputField
+                                                    label="Target Launch Date"
+                                                    type="date"
+                                                    placeholder="YYYY-MM-DD"
+                                                    value={formData.launchDate || ""}
+                                                    onChange={(v) => handleChange("launchDate", v)}
+                                                />
+                                                <InputField
+                                                    label="Waitlist / Active Users"
+                                                    placeholder="e.g. 50 beta testers"
+                                                    value={formData.earlyUsers || ""}
+                                                    onChange={(v) => handleChange("earlyUsers", v)}
+                                                />
+                                            </div>
+                                            <InputField
+                                                label="Early Feedback"
+                                                placeholder="What are they saying? (Quotes are good)"
+                                                value={formData.feedback || ""}
+                                                onChange={(v) => handleChange("feedback", v)}
+                                                textarea
+                                            />
+                                        </div>
+                                    )}
+
+                                    {stage === "Growth" && (
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <InputField label="Monthly Revenue (MRR)" placeholder="$0.00" value={formData.mrr || ""} onChange={(v) => handleChange("mrr", v)} />
+                                            <InputField label="Burn Rate (Cost/Month)" placeholder="$0.00" value={formData.burnRate || ""} onChange={(v) => handleChange("burnRate", v)} />
+                                            <InputField label="CAC (Cost per Customer)" placeholder="$0.00" value={formData.cac || ""} onChange={(v) => handleChange("cac", v)} />
+                                            <InputField label="Runway (Months Left)" placeholder="e.g. 12" value={formData.runway || ""} onChange={(v) => handleChange("runway", v)} />
+                                        </div>
+                                    )}
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
+                    </div>
+
+                    {/* RIGHT COLUMN: Sidebar Stats */}
+                    <div className="lg:col-span-4 space-y-12">
+
+                        {/* Archetype Selector */}
+                        <div>
+                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 flex justify-between">
+                                Founder Archetype
+                                <Cpu size={14} />
+                            </h3>
+                            <div className="grid gap-4">
+                                <ArchetypeCard
+                                    type="Hacker"
+                                    subtitle="The Builder"
+                                    desc="Tech-first. Focused on shipping code."
+                                    icon={Terminal}
+                                    selected={archetype === "Hacker"}
+                                    onSelect={() => setArchetype("Hacker")}
+                                />
+                                <ArchetypeCard
+                                    type="Hustler"
+                                    subtitle="The Dealmaker"
+                                    desc="Sales-first. Focused on growth & networking."
+                                    icon={TrendingUp}
+                                    selected={archetype === "Hustler"}
+                                    onSelect={() => setArchetype("Hustler")}
+                                />
+                                <ArchetypeCard
+                                    type="Visionary"
+                                    subtitle="The Architect"
+                                    desc="Product-first. Focused on design & strategy."
+                                    icon={Lightbulb}
+                                    selected={archetype === "Visionary"}
+                                    onSelect={() => setArchetype("Visionary")}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Blocker Input */}
+                        <div>
+                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 flex justify-between">
+                                Current Bottleneck
+                                <AlertCircle size={14} className="text-red-500" />
+                            </h3>
+                            <div className="border border-red-900/30 bg-red-950/5 p-4 relative">
+                                <div className="absolute top-0 left-0 w-full h-[1px] bg-red-900/50" />
+                                <div className="absolute bottom-0 left-0 w-full h-[1px] bg-red-900/50" />
+                                <InputField
+                                    label="Main Blocker"
+                                    placeholder="What's stopping you right now?"
+                                    value={formData.northStarBlocker || ""}
+                                    onChange={(v) => handleChange("northStarBlocker", v)}
+                                />
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                {/* Footer Controls */}
+                <div className="fixed bottom-0 left-0 w-full border-t border-teal-900/30 bg-black/80 backdrop-blur-md p-6 z-50">
+                    <div className="max-w-6xl mx-auto flex justify-between items-center">
+                        <div className="flex items-center gap-4 text-[10px] font-mono text-teal-800 uppercase">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-teal-900" />
+                                Status: Ready
+                            </div>
+                            <div className="hidden sm:block">|</div>
+                            <div className="hidden sm:block">Encrypted: AES-256</div>
+                        </div>
+
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="group relative bg-teal-500 hover:bg-teal-400 text-black px-8 py-3 text-xs font-bold uppercase tracking-[0.15em] transition-all disabled:opacity-50 disabled:cursor-not-allowed clip-path-slant"
+                        >
+                            <span className="relative z-10 flex items-center gap-2">
+                                {saving ? "Processing..." : "Update DNA"}
+                                {!saving && <Save size={14} />}
+                            </span>
+                            <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
 }

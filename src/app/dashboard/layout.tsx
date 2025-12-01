@@ -1,27 +1,28 @@
 // ============================================================================
 // 📁 Hardware Source: src/app/dashboard/layout.tsx
-// 🕒 Date: 2025-11-29 17:00
-// 🧠 Version: v1.1 (Connected Shell)
+// 🕒 Date: 2025-12-01
+// 🧠 Version: v3.1 (Added Settings Menu)
 // ----------------------------------------------------------------------------
-// ✅ Changes:
-// 1) Integrated useAuth() to fetch real user data.
-// 2) Display Google Avatar instead of placeholder.
-// 3) Logout button is now functional.
+// ✅ Logic:
+// - Main User Dashboard Layout.
+// - Navigation for Mission Control, Chat, Profile, Mentors, Community.
+// - ADDED: Settings menu item.
+// - Spotlight effect and User Auth integration.
 // ============================================================================
 
 "use client";
 import React, { useState, useRef } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation"; // useRouter added
-import { useAuth } from "@/context/auth-context"; // Auth hook added
-import { 
-  User, 
-  MessageSquare, 
-  LayoutGrid, 
-  Settings, 
+import { usePathname, useRouter } from "next/navigation"; 
+import { useAuth } from "@/context/auth-context"; 
+import {
+  User,
+  MessageSquare,
+  LayoutGrid,
+  Settings, // Icon for settings
   Zap,
   LogOut,
-  Users // Icon for mentors
+  Users 
 } from "lucide-react";
 
 // --- SPOTLIGHT WRAPPER ---
@@ -61,11 +62,11 @@ function DashboardSpotlight({ children }: { children: React.ReactNode }) {
 export default function FounderLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth(); // <--- Get User & Logout
+  const { user, logout } = useAuth(); 
 
   const handleLogout = async () => {
     await logout();
-    router.push("/login"); // Redirect after logout
+    router.push("/login"); 
   };
 
   const navItems = [
@@ -74,6 +75,7 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
     { name: "Startup DNA", href: "/dashboard/profile", icon: <User size={18} /> },
     { name: "Mentors", href: "/dashboard/mentors", icon: <Users size={18} /> },
     { name: "Community", href: "/dashboard/community", icon: <Users size={18} /> },
+    { name: "Settings", href: "/dashboard/settings", icon: <Settings size={18} /> }, // ✅ ADDED THIS LINE
   ];
 
   return (
@@ -95,17 +97,16 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
               const isActive = pathname === item.href;
               return (
                 <Link key={item.href} href={item.href}>
-                  <div className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-300 group ${
-                    isActive 
-                      ? "bg-white/5 text-white border border-white/10 shadow-inner" 
+                  <div className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-300 group ${isActive
+                      ? "bg-white/5 text-white border border-white/10 shadow-inner"
                       : "text-slate-500 hover:text-cyan-400 hover:bg-white/5"
-                  }`}>
+                    }`}>
                     <div className={isActive ? "text-cyan-400" : "group-hover:text-cyan-400 transition"}>
-                        {item.icon}
+                      {item.icon}
                     </div>
                     <span className="hidden md:block">{item.name}</span>
                     {isActive && (
-                        <div className="ml-auto w-1.5 h-1.5 bg-cyan-500 rounded-full shadow-[0_0_8px_rgba(6,182,212,0.8)] hidden md:block"></div>
+                      <div className="ml-auto w-1.5 h-1.5 bg-cyan-500 rounded-full shadow-[0_0_8px_rgba(6,182,212,0.8)] hidden md:block"></div>
                     )}
                   </div>
                 </Link>
@@ -116,47 +117,47 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
 
         {/* Footer Actions */}
         <div className="border-t border-white/5 pt-6 flex flex-col gap-4">
-            {/* User Profile Mini-Card */}
-            <div className="flex items-center gap-3 px-2 md:px-0 justify-center md:justify-start">
-                {user?.photoURL ? (
-                    <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full border border-white/10" />
-                ) : (
-                    <div className="w-8 h-8 bg-slate-800 rounded-full animate-pulse"></div>
-                )}
-                <div className="hidden md:block overflow-hidden">
-                    <p className="text-xs text-white font-bold truncate w-32">{user?.displayName || "Founder"}</p>
-                    <p className="text-[10px] text-slate-500 truncate w-32">{user?.email}</p>
-                </div>
+          {/* User Profile Mini-Card */}
+          <div className="flex items-center gap-3 px-2 md:px-0 justify-center md:justify-start">
+            {user?.photoURL ? (
+              <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full border border-white/10" />
+            ) : (
+              <div className="w-8 h-8 bg-slate-800 rounded-full animate-pulse"></div>
+            )}
+            <div className="hidden md:block overflow-hidden">
+              <p className="text-xs text-white font-bold truncate w-32">{user?.displayName || "Founder"}</p>
+              <p className="text-[10px] text-slate-500 truncate w-32">{user?.email}</p>
             </div>
-            
-            <button 
-                onClick={handleLogout}
-                className="flex items-center gap-3 px-3 py-2 text-slate-600 hover:text-red-400 cursor-pointer transition text-sm font-medium justify-center md:justify-start"
-            >
-                <LogOut size={18} />
-                <span className="hidden md:block">Disconnect</span>
-            </button>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-2 text-slate-600 hover:text-red-400 cursor-pointer transition text-sm font-medium justify-center md:justify-start"
+          >
+            <LogOut size={18} />
+            <span className="hidden md:block">Disconnect</span>
+          </button>
         </div>
       </aside>
 
       {/* --- CONTENT WRAPPER --- */}
       <main className="flex-1 overflow-y-auto relative">
-         <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 sticky top-0 bg-[#050505]/80 backdrop-blur-md z-40">
-             <div className="text-xs font-mono text-slate-500 flex items-center gap-2">
-                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                 SYSTEM: ONLINE
-             </div>
-             {/* Header Avatar (Mobile/Desktop) */}
-             <div className="flex items-center gap-4">
-                 {user?.photoURL && (
-                    <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-full border border-white/10" />
-                 )}
-             </div>
-         </header>
-         
-         <div className="p-8 md:p-12 pb-24 max-w-7xl mx-auto">
-            {children}
-         </div>
+        <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 sticky top-0 bg-[#050505]/80 backdrop-blur-md z-40">
+          <div className="text-xs font-mono text-slate-500 flex items-center gap-2">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            SYSTEM: ONLINE
+          </div>
+          {/* Header Avatar (Mobile/Desktop) */}
+          <div className="flex items-center gap-4">
+            {user?.photoURL && (
+              <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-full border border-white/10" />
+            )}
+          </div>
+        </header>
+
+        <div className="p-8 md:p-12 pb-24 max-w-7xl mx-auto">
+          {children}
+        </div>
       </main>
     </DashboardSpotlight>
   );

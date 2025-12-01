@@ -29,7 +29,7 @@ export default function AdminKnowledgePage() {
                         Knowledge Command Center
                     </h1>
                     <p className="text-slate-400 font-mono text-sm">
-                        Manage the AI's brain. Upload global documents or ingest external datasets.
+                        Manage the AI&apos;s brain. Upload global documents or ingest external datasets.
                     </p>
                 </div>
 
@@ -80,7 +80,6 @@ export default function AdminKnowledgePage() {
 // ------------------------------------------------------------------
 function FilesView() {
     const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
-    const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
 
     useEffect(() => { fetchDocs(); }, []);
@@ -89,7 +88,7 @@ function FilesView() {
         try {
             const data = await KnowledgeService.getGlobalDocs();
             setDocs(data);
-        } catch (error) { console.error(error); } finally { setLoading(false); }
+        } catch (error) { console.error(error); }
     };
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,7 +171,10 @@ function DatasetsView() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             setStatus("success"); setLog(data.message); setDatasetName(""); refreshHistory();
-        } catch (err: any) { setStatus("error"); setLog(err.message); }
+        } catch (err: unknown) { 
+            setStatus("error"); 
+            setLog(err instanceof Error ? err.message : "Import failed"); 
+        }
     };
 
     return (
@@ -225,7 +227,10 @@ function ScraperView() {
             setLog(data.message);
             setUrl(""); 
             refreshHistory();
-        } catch (err: any) { setStatus("error"); setLog(err.message); }
+        } catch (err: unknown) { 
+            setStatus("error"); 
+            setLog(err instanceof Error ? err.message : "Scrape failed"); 
+        }
     };
 
     return (

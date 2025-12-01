@@ -1,8 +1,12 @@
 // ============================================================================
 // 📁 Hardware Source: src/lib/api/startup.ts
-// 🕒 Date: 2025-11-29 17:30
-// 🧠 Version: v1.0 (Firestore DNA Service)
+// 🕒 Date: 2025-11-30
+// 🧠 Version: v3.0 (Startup DNA Schema)
 // ----------------------------------------------------------------------------
+// ✅ Logic:
+// - Defines StartupProfile interface with new Adaptive fields.
+// - Firestore CRUD operations for Startup DNA.
+// ============================================================================
 
 import { db } from "@/lib/firebase";
 import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
@@ -12,10 +16,29 @@ export interface StartupProfile {
   name: string;
   url: string;
   oneLiner: string;
-  stage: string; // 'Idea' | 'MVP' | 'Growth'
-  burnRate: string;
-  runway: string;
-  teamSize: string;
+  stage: 'Idea' | 'MVP' | 'Growth';
+
+  // New Fields
+  archetype?: 'Hacker' | 'Hustler' | 'Visionary';
+  northStarBlocker?: string;
+
+  // Idea Stage
+  problem?: string;
+  targetAudience?: string;
+  hypothesis?: string;
+
+  // MVP Stage
+  launchDate?: string;
+  earlyUsers?: string;
+  feedback?: string;
+
+  // Growth Stage
+  mrr?: string;
+  burnRate?: string;
+  runway?: string;
+  cac?: string;
+  teamSize?: string;
+
   industryTags: string[];
   updatedAt: string;
 }

@@ -13,7 +13,7 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, collection, getDocs, updateDoc, arrayUnion } from "firebase/firestore";
 
 export type UserTier = "SCOUT" | "VANGUARD" | "COMMAND";
-export type UserRole = "user" | "admin";
+export type UserRole = "user" | "admin" | "founder" | "mentor" | "accelerator";
 
 export interface UserProfile {
     uid: string;
@@ -146,5 +146,11 @@ export const UserService = {
         const userRef = doc(db, "users", uid);
         const userSnap = await getDoc(userRef);
         return userSnap.exists() && (userSnap.data().role === "admin");
+    },
+
+    async isMentor(uid: string): Promise<boolean> {
+        const userRef = doc(db, "users", uid);
+        const userSnap = await getDoc(userRef);
+        return userSnap.exists() && (userSnap.data().role === "mentor");
     }
 };

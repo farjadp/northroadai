@@ -1,11 +1,21 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { collection, query, orderBy, limit, getDocs, Timestamp } from "firebase/firestore";
 import { Terminal, Calendar, Monitor, MessageSquare } from "lucide-react";
 
+type GuestChat = {
+    id: string;
+    message: string;
+    response: string;
+    fingerprint?: string;
+    ip?: string;
+    userAgent?: string;
+    createdAt?: Date | null;
+};
+
 export default function GuestChatsPage() {
-    const [chats, setChats] = useState<any[]>([]);
+    const [chats, setChats] = useState<GuestChat[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -17,11 +27,19 @@ export default function GuestChatsPage() {
                     limit(50)
                 );
                 const snapshot = await getDocs(q);
-                const data = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    createdAt: doc.data().createdAt?.toDate()
-                }));
+                const data: GuestChat[] = snapshot.docs.map(doc => {
+                    const raw = doc.data();
+                    const createdAt = raw.createdAt instanceof Timestamp ? raw.createdAt.toDate() : raw.createdAt?.toDate?.();
+                    return {
+                        id: doc.id,
+                        message: raw.message,
+                        response: raw.response,
+                        fingerprint: raw.fingerprint,
+                        ip: raw.ip,
+                        userAgent: raw.userAgent,
+                        createdAt: createdAt || null
+                    };
+                });
                 setChats(data);
             } catch (error) {
                 console.error("Error fetching chats:", error);

@@ -55,13 +55,20 @@ const MENTOR = {
     nextSlot: "Tomorrow, 2:00 PM EST"
 };
 
-export default function MentorProfile() {
-    const [isBookingOpen, setIsBookingOpen] = useState(false);
-    const [shareData, setShareData] = useState(false); // THE CORE LOGIC
-    const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-
-    // --- BOOKING MODAL COMPONENT ---
-    const BookingModal = () => (
+function BookingModal({
+    onClose,
+    shareData,
+    setShareData,
+    selectedSlot,
+    setSelectedSlot
+}: {
+    onClose: () => void;
+    shareData: boolean;
+    setShareData: (val: boolean) => void;
+    selectedSlot: string | null;
+    setSelectedSlot: (val: string) => void;
+}) {
+    return (
         <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
@@ -73,7 +80,7 @@ export default function MentorProfile() {
                 {/* Modal Header */}
                 <div className="p-6 border-b border-white/10 flex justify-between items-center bg-zinc-900/50">
                     <h3 className="text-xl font-bold text-white">Secure Session Booking</h3>
-                    <button onClick={() => setIsBookingOpen(false)} className="text-slate-500 hover:text-white">Close</button>
+                    <button onClick={onClose} className="text-slate-500 hover:text-white">Close</button>
                 </div>
 
                 <div className="p-6 space-y-6">
@@ -159,13 +166,27 @@ export default function MentorProfile() {
             </motion.div>
         </motion.div>
     );
+}
+
+export default function MentorProfile() {
+    const [isBookingOpen, setIsBookingOpen] = useState(false);
+    const [shareData, setShareData] = useState(false); // THE CORE LOGIC
+    const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
 
     // --- MAIN PAGE RENDER ---
     return (
         <div className="max-w-5xl mx-auto pb-20">
             <AnimatePresence>
-                {isBookingOpen && <BookingModal />}
+                {isBookingOpen && (
+                    <BookingModal
+                        onClose={() => setIsBookingOpen(false)}
+                        shareData={shareData}
+                        setShareData={setShareData}
+                        selectedSlot={selectedSlot}
+                        setSelectedSlot={(slot) => setSelectedSlot(slot)}
+                    />
+                )}
             </AnimatePresence>
 
             {/* Back Nav */}
@@ -275,7 +296,7 @@ export default function MentorProfile() {
                                     <div className="flex gap-1 mb-2">
                                         {[...Array(5)].map((_, j) => <Star key={j} size={12} className="fill-yellow-500 text-yellow-500" />)}
                                     </div>
-                                    <p className="text-sm text-slate-300 italic mb-3">"{rev.text}"</p>
+                                    <p className="text-sm text-slate-300 italic mb-3">&quot;{rev.text}&quot;</p>
                                     <p className="text-xs text-slate-500 font-mono">— {rev.author}</p>
                                 </div>
                             ))}

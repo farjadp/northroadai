@@ -1,12 +1,11 @@
 // ============================================================================
 // 📁 Hardware Source: src/app/admin/layout.tsx
 // 🕒 Date: 2025-11-30
-// 🧠 Version: v1.1 (Admin Guard & Nav)
+// 🧠 Version: v3.0 (Admin Guard & Nav)
 // ----------------------------------------------------------------------------
 // ✅ Logic:
-// - Adds admin access guard (redirect non-admins to login).
-// - Renders sidebar navigation for admin sections (users, packages, logs).
-// - Includes spotlight visual effect wrapper.
+// - Admin Dashboard Layout with Access Guard.
+// - Navigation for Admin modules including Mentors.
 // ============================================================================
 
 "use client";
@@ -66,6 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Knowledge Base", href: "/admin/knowledge", icon: <Database size={18} /> },
     { name: "Packages", href: "/admin/packages", icon: <KeySquare size={18} /> },
     { name: "Chat Settings", href: "/admin/settings/chat", icon: <Settings size={18} /> },
+    { name: "Mentors", href: "/dashboard/mentors", icon: <Users size={18} /> },
     { name: "System Logs", href: "/admin/logs", icon: <TerminalSquare size={18} /> },
   ];
 

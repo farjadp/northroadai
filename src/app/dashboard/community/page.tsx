@@ -128,7 +128,7 @@ export default function TheHive() {
                    <div>
                        <h3 className="text-xs font-bold text-green-400 uppercase mb-1">Live Hive Insight</h3>
                        <p className="text-sm text-slate-300 leading-relaxed">
-                           "Today, 40% of discussions are about <span className="text-white font-medium border-b border-white/20">Term Sheets</span>. Be aware that VCs are pushing for higher liquidation preferences this month."
+                           &quot;Today, 40% of discussions are about <span className="text-white font-medium border-b border-white/20">Term Sheets</span>. Be aware that VCs are pushing for higher liquidation preferences this month.&quot;
                        </p>
                    </div>
               </div>

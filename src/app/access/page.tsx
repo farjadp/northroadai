@@ -44,7 +44,7 @@ export default function AccessPage() {
             <div className="p-1 border border-emerald-500/50 rounded bg-emerald-500/10 group-hover:bg-emerald-500 group-hover:text-black transition-colors">
                 <ArrowLeft size={12} />
             </div>
-            <span>/// ABORT_MISSION</span>
+            <span>{'/// ABORT_MISSION'}</span>
         </Link>
         <div className="flex items-center gap-2 text-[10px] font-mono text-emerald-500/50 hidden sm:flex border border-emerald-500/20 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md">
            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>

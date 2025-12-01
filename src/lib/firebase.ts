@@ -10,7 +10,8 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
-import { getAnalytics, isSupported } from "firebase/analytics";
+import { getStorage, FirebaseStorage } from "firebase/storage";
+import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
 
 // مقادیر مستقیم (از لاگ‌های قبلی شما برداشته شده)
 const firebaseConfig = {
@@ -24,28 +25,21 @@ const firebaseConfig = {
 };
 
 // متغیرهای سراسری
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-let analytics: any = null;
-
-// Initialize Firebase (Singleton Pattern)
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApp();
-}
-
-auth = getAuth(app);
-db = getFirestore(app);
+const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const auth: Auth = getAuth(app);
+const db: Firestore = getFirestore(app);
+const storage: FirebaseStorage = getStorage(app);
+let analytics: Analytics | null = null;
 
 // Analytics (Client Side Only)
 if (typeof window !== "undefined") {
-  isSupported().then((supported) => {
-    if (supported) analytics = getAnalytics(app);
-  }).catch((err) => console.log("Analytics skipped:", err));
+  isSupported()
+    .then((supported) => {
+      if (supported) analytics = getAnalytics(app);
+    })
+    .catch((err) => console.log("Analytics skipped:", err));
 }
 
 console.log("🔥 Firebase Config Loaded Successfully");
 
-export { app, auth, db, analytics };
+export { app, auth, db, storage, analytics };

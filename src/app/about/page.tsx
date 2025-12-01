@@ -92,7 +92,7 @@ export default function AboutPage() {
         <section>
             <div className="mb-8">
                 <h2 className="text-3xl font-bold text-white mb-4">What We Do</h2>
-                <p className="text-slate-400 max-w-2xl">We give every founder a "thinking partner" that never sleeps.</p>
+                <p className="text-slate-400 max-w-2xl">We give every founder a &quot;thinking partner&quot; that never sleeps.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -211,7 +211,14 @@ function CheckItem({ text }: { text: string }) {
     );
 }
 
-function PersonaCard({ image, icon, title, desc }: any) {
+type PersonaCardProps = {
+    image: string;
+    icon: React.ReactNode;
+    title: string;
+    desc: string;
+};
+
+function PersonaCard({ image, icon, title, desc }: PersonaCardProps) {
     return (
         <div className="group relative h-[320px] rounded-2xl overflow-hidden border border-white/10">
             <Image src={image} alt={title} fill className="object-cover transition-transform duration-700 group-hover:scale-110 opacity-50 group-hover:opacity-40" />
@@ -229,7 +236,13 @@ function PersonaCard({ image, icon, title, desc }: any) {
     )
 }
 
-function PrincipleItem({ icon, title, text }: any) {
+type PrincipleItemProps = {
+    icon: React.ReactNode;
+    title: string;
+    text: string;
+};
+
+function PrincipleItem({ icon, title, text }: PrincipleItemProps) {
     return (
         <div className="flex flex-col items-center text-center md:items-start md:text-left gap-4">
             <div className="p-3 rounded-xl bg-white/5 border border-white/10">

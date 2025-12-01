@@ -49,7 +49,8 @@ const LiveLog = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const newLog = `[${new Date().toLocaleTimeString()}] ${templates[Math.floor(Math.random() * templates.length)]}`;
+        const templateIdx = templates.length ? (Date.now() % templates.length) : 0;
+        const newLog = `[${new Date().toLocaleTimeString()}] ${templates[templateIdx] || ""}`;
       setLogs((prev) => [newLog, ...prev].slice(0, 8));
     }, 2500);
     return () => clearInterval(interval);
@@ -94,13 +95,13 @@ export default function AdminDashboard() {
 
       {/* 2. REAL-TIME AI STATS (The Brain) */}
       <section>
-          <h2 className="text-sm font-mono text-slate-500 uppercase mb-4 pl-1">/// Neural Engine Status</h2>
+          <h2 className="text-sm font-mono text-slate-500 uppercase mb-4 pl-1">{'/// Neural Engine Status'}</h2>
           <BrainStats variant="full" />
       </section>
 
       {/* 3. BUSINESS STATS GRID */}
       <section>
-        <h2 className="text-sm font-mono text-slate-500 uppercase mb-4 pl-1">/// Business Metrics</h2>
+        <h2 className="text-sm font-mono text-slate-500 uppercase mb-4 pl-1">{'/// Business Metrics'}</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <StatCard title="Active Founders" value="142" sub="+12% this week" color="cyan" icon={Users} />
             <StatCard title="New Signups" value="28" sub="Since yesterday" color="green" icon={TrendingUp} />
@@ -115,7 +116,7 @@ export default function AdminDashboard() {
         {/* LEFT: Live Neural Feed */}
         <div className="lg:col-span-2 p-6 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-sm font-mono text-slate-400 uppercase">/// Live Neural Activity</h3>
+                <h3 className="text-sm font-mono text-slate-400 uppercase">{'/// Live Neural Activity'}</h3>
                 <Activity size={16} className="text-cyan-500 animate-pulse"/>
             </div>
             <div className="bg-black/50 rounded-lg p-4 border border-white/5 h-[300px] overflow-hidden relative">
@@ -126,7 +127,7 @@ export default function AdminDashboard() {
 
         {/* RIGHT: Quick Actions / Escalations */}
         <div className="p-6 rounded-2xl border border-white/10 bg-zinc-900/20 backdrop-blur-md flex flex-col">
-             <h3 className="text-sm font-mono text-slate-400 uppercase mb-6">/// Pending Escalations</h3>
+             <h3 className="text-sm font-mono text-slate-400 uppercase mb-6">{'/// Pending Escalations'}</h3>
              
              <div className="space-y-4 flex-1">
                 {[1, 2, 3].map((item) => (

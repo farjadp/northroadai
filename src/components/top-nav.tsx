@@ -53,7 +53,7 @@ export function TopNav({ className, translucent = false }: TopNavProps) {
                 active && "text-white"
               )}
             >
-              // {item.label}
+              {item.label}
             </Link>
           );
         })}
