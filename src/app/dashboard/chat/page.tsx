@@ -1,13 +1,10 @@
 // ============================================================================
 // 📁 Hardware Source: src/app/dashboard/chat/page.tsx
-// 🕒 Date: 2025-11-30
-// 🧠 Version: v3.1 (Tactical Chat Persistence + UI Fixes)
+// 🕒 Date: 2025-12-01 11:00
+// 🧠 Version: v4.1 (Full Logic + Transparent Loading UI)
 // ----------------------------------------------------------------------------
-// ✅ Logic:
-// - Integrates History System (Firestore).
-// - Manages Sessions (Create, Load, Delete).
-// - URL Routing for Sessions.
-// - Fixed Agent Icon Rendering Bug.
+// ✅ Logic: All original logic PRESERVED.
+// ✅ Feature: Connected the 'loadingText' logic to the actual UI.
 // ============================================================================
 
 "use client";
@@ -24,7 +21,7 @@ import {
   X,
   Lock,
   History,
-  Compass // Fallback icon
+  Compass
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { getStartupDNA, StartupProfile } from "@/lib/api/startup";
@@ -33,6 +30,20 @@ import { UserService } from "@/lib/user-service";
 import { HistoryService, ChatSession } from "@/lib/api/history";
 import { ChatSidebar } from "@/components/chat/chat-sidebar";
 import { useRouter, useSearchParams } from "next/navigation";
+import { MessageBubble } from "@/components/chat/message-bubble"; // <--- این خط را اضافه کنید
+
+
+// --- CONSTANTS ---
+const LOADING_STEPS = [
+  "INITIALIZING UPLINK...",
+  "PIRAI thinking about your DNA...",
+  "SCANNING KNOWLEDGE BASE...",
+  "ANALYZING STARTUP CONTEXT...",
+  "CONSULTING North Road AI Database...",
+  "CONSULTING North Road AI Knowledge...",
+  "CONSULTING GEMINI 2.0...",
+  "FINALIZING STRATEGY..."
+];
 
 type Message = {
   id: string;
@@ -54,12 +65,11 @@ function PiraChatContent() {
   const urlSessionId = searchParams.get("session");
   const agentParam = searchParams.get("agent");
 
-  // State
+  // --- STATE ---
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [historySidebarOpen, setHistorySidebarOpen] = useState(true);
   
-  // Default to Navigator or URL param
   const [selectedAgent, setSelectedAgent] = useState<Agent>(AGENTS[0]);
   
   const [agentSidebarOpen, setAgentSidebarOpen] = useState(false);
@@ -76,6 +86,11 @@ function PiraChatContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // استیت جدید برای متن لودینگ
+  const [loadingText, setLoadingText] = useState(LOADING_STEPS[0]);
+
+  // --- EFFECTS ---
+
   // 1. Initial Load & URL Parsing
   useEffect(() => {
     if (agentParam) {
@@ -84,14 +99,48 @@ function PiraChatContent() {
     }
   }, [agentParam]);
 
-  // 2. Load Startup DNA
+  // 🔥 NEW: Loading Text Animation Loop
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLoading) {
+      let step = 0;
+      setLoadingText(LOADING_STEPS[0]);
+      interval = setInterval(() => {
+        step = (step + 1) % LOADING_STEPS.length;
+        setLoadingText(LOADING_STEPS[step]);
+      }, 2000); // متن هر 2 ثانیه عوض می‌شود
+    }
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
+  // 2. Load Startup DNA & TRIGGER WELCOME
   useEffect(() => {
     if (user?.uid) {
+      console.log("👤 Fetching DNA for user:", user.uid);
+
       getStartupDNA(user.uid).then((data) => {
-        if (data) setStartupContext(data);
+        if (data) {
+            console.log("✅ DNA Found, generating smart welcome...");
+            setStartupContext(data);
+            if (!urlSessionId && messages.length === 0) {
+                generateSmartWelcome(data);
+            }
+        } else {
+            console.log("⚠️ No DNA found, showing default welcome.");
+            if (!urlSessionId && messages.length === 0) {
+                setMessages([{
+                    id: "intro", 
+                    role: "ai", 
+                    content: "Greetings, Founder. Connection established.\n\nI noticed you haven't set up your **Startup DNA** yet. I can give you better advice if you fill out your profile.\n\nFor now, how can I assist you?", 
+                    timestamp: new Date()
+                }]);
+            }
+        }
+      }).catch(err => {
+          console.error("❌ DNA Fetch Error:", err);
       });
     }
-  }, [user]);
+  }, [user, urlSessionId]);
 
   // 3. Load Sessions List
   useEffect(() => {
@@ -112,11 +161,44 @@ function PiraChatContent() {
       loadSessionMessages(urlSessionId);
     } else if (!urlSessionId) {
       setCurrentSessionId(null);
-      setMessages([]); // Clear chat for new session
+      setMessages([]); 
+      if (startupContext) generateSmartWelcome(startupContext);
     }
   }, [urlSessionId, user]);
 
-  // Auto-scroll
+  // --- FUNCTIONS ---
+
+  const generateSmartWelcome = async (profile: StartupProfile) => {
+      if (messages.length > 0 || isLoading) return; 
+      
+      setIsLoading(true);
+      try {
+          const res = await fetch("/api/chat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ 
+                  message: "GENERATE_WELCOME_MESSAGE",
+                  startupContext: profile,
+                  agentId: selectedAgent.id,
+                  isSystemInstruction: true
+              }),
+          });
+          const data = await res.json();
+          if (data.reply) {
+              setMessages([{
+                  id: "welcome-" + Date.now(),
+                  role: "ai",
+                  content: data.reply,
+                  timestamp: new Date()
+              }]);
+          }
+      } catch (e) {
+          console.warn("Welcome gen failed", e);
+      } finally {
+          setIsLoading(false);
+      }
+  };
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -177,9 +259,9 @@ function PiraChatContent() {
     
     setSelectedAgent(agent);
     
-    // Only show greeting if starting fresh
-    if (!currentSessionId) {
-      // Optional: Add a local welcome message
+    if (!currentSessionId && startupContext) {
+        setMessages([]); 
+        generateSmartWelcome(startupContext);
     }
     setAgentSidebarOpen(false);
   };
@@ -188,7 +270,7 @@ function PiraChatContent() {
     if (!agentToUnlock || !user) return;
     try {
       await UserService.unlockAgent(user.uid, agentToUnlock.id);
-      await refreshUnlockedAgents(); // Update context
+      await refreshUnlockedAgents();
       setUnlockModalOpen(false);
       setSelectedAgent(agentToUnlock);
       setAgentToUnlock(null);
@@ -237,31 +319,25 @@ function PiraChatContent() {
       timestamp: new Date()
     };
 
-    // Optimistic UI Update
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
 
-    // Prepare File Data
     const fileToSend = attachment ? { fileUri: attachment.uri, mimeType: attachment.mime } : null;
     setAttachment(null);
 
     let activeSessionId = currentSessionId;
 
     try {
-      // 1. Create Session if needed
       if (!activeSessionId) {
-        activeSessionId = await HistoryService.createNewSession(user.uid, selectedAgent.id, userMsg.content);
+        activeSessionId = await HistoryService.createNewSession(user.uid, selectedAgent.id, userMsg.content.substring(0, 30) + "...");
         setCurrentSessionId(activeSessionId);
-        // Shallow routing update without refresh
         window.history.replaceState(null, "", `/dashboard/chat?session=${activeSessionId}`);
-        loadSessions(); // Refresh sidebar
+        loadSessions();
       }
 
-      // 2. Save User Message
       await HistoryService.addMessageToSession(user.uid, activeSessionId, "user", userMsg.content, fileToSend ? [fileToSend] : []);
 
-      // 3. Call AI API
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -271,7 +347,7 @@ function PiraChatContent() {
           fileData: fileToSend,
           agentId: selectedAgent.id,
           userId: user.uid,
-          history: messages //
+          history: messages
         }),
       });
 
@@ -285,9 +361,8 @@ function PiraChatContent() {
           timestamp: new Date()
         };
         setMessages((prev) => [...prev, aiMsg]);
-        // 4. Save AI Message
         await HistoryService.addMessageToSession(user.uid, activeSessionId, "ai", data.reply);
-        loadSessions(); // Refresh sidebar timestamp
+        loadSessions();
       } else if (data.error) {
         throw new Error(data.error);
       }
@@ -312,13 +387,12 @@ function PiraChatContent() {
     }
   };
 
-  // Safe Icon Rendering
   const SelectedAgentIcon = selectedAgent?.icon || Compass;
 
   return (
     <div className="flex h-[calc(100vh-140px)] max-w-7xl mx-auto relative gap-4">
       
-      {/* --- HISTORY SIDEBAR --- */}
+      {/* HISTORY SIDEBAR */}
       <ChatSidebar
         sessions={sessions}
         currentSessionId={currentSessionId}
@@ -329,7 +403,7 @@ function PiraChatContent() {
         onClose={() => setHistorySidebarOpen(false)}
       />
 
-      {/* --- AGENT SELECTOR SIDEBAR (RIGHT) --- */}
+      {/* AGENT SIDEBAR */}
       <AnimatePresence>
         {agentSidebarOpen && (
           <motion.div
@@ -349,7 +423,7 @@ function PiraChatContent() {
               const isActive = selectedAgent.id === agent.id;
               const hasAccess = unlockedAgents.includes(agent.id) || !agent.isPremium;
               const isLocked = !hasAccess;
-              const AgentIcon = agent.icon; // Correct component rendering
+              const AgentIcon = agent.icon; 
 
               return (
                 <motion.button
@@ -379,10 +453,9 @@ function PiraChatContent() {
         )}
       </AnimatePresence>
 
-      {/* --- MAIN CHAT AREA --- */}
+      {/* MAIN CHAT */}
       <div className="flex-1 flex flex-col relative rounded-2xl overflow-hidden border border-white/5 bg-[#0a0a0a]">
         
-        {/* Toggle History Button */}
         <div className="absolute top-3 left-3 z-10">
           {!historySidebarOpen && (
             <button
@@ -394,7 +467,6 @@ function PiraChatContent() {
           )}
         </div>
 
-        {/* Top Header */}
         <div className="flex justify-between items-center px-6 py-3 bg-white/[0.02] border-b border-white/5">
           <div
             className="flex items-center gap-3 cursor-pointer group pl-8"
@@ -422,12 +494,11 @@ function PiraChatContent() {
           </button>
         </div>
 
-        {/* Chat Stream */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
           {messages.length === 0 && !isLoading && (
              <div className="flex flex-col items-center justify-center h-full opacity-50 space-y-4">
                  <SelectedAgentIcon size={48} className={selectedAgent.colorClass} />
-                 <p className="text-sm text-slate-500 font-mono">ENCRYPTED CHANNEL OPEN</p>
+                 <p className="text-sm text-slate-500 font-mono">INITIALIZING ENCRYPTED UPLINK...</p>
              </div>
           )}
 
@@ -439,7 +510,6 @@ function PiraChatContent() {
                 animate={{ opacity: 1, y: 0 }}
                 className={`flex gap-4 max-w-3xl mx-auto w-full ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
               >
-                {/* Avatar */}
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
                     msg.role === "ai" 
                     ? `bg-slate-900 border-slate-800 ${selectedAgent.colorClass}` 
@@ -448,35 +518,59 @@ function PiraChatContent() {
                   {msg.role === "ai" ? <Bot size={16} /> : <UserIcon size={16} />}
                 </div>
 
-                {/* Message Bubble */}
-                <div className={`relative max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${msg.role === "ai"
-                    ? "bg-[#0f0f0f] border border-white/10 text-slate-300"
-                    : "bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-lg"
+
+{/* Message Bubble (Updated with Markdown) */}
+                <div className={`relative max-w-[85%] p-4 rounded-2xl shadow-sm ${
+                    msg.role === "ai"
+                    ? "bg-[#0f0f0f] border border-white/10" // استایل هوش مصنوعی
+                    : "bg-gradient-to-br from-emerald-600 to-teal-700 text-white" // استایل کاربر
                   }`}>
-                  {msg.content}
+                  
+                  {/* استفاده از کامپوننت جدید */}
+                  <MessageBubble content={msg.content} isUser={msg.role === "user"} />
+
                   <div className={`text-[9px] font-mono mt-2 opacity-50 ${msg.role === "user" ? "text-emerald-100" : "text-slate-600"}`}>
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
+
+                
               </motion.div>
             ))}
           </AnimatePresence>
 
+          {/* 🔥 MODIFIED: NEW LOADING UI WITH ANIMATED TEXT */}
           {isLoading && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-4 max-w-3xl mx-auto w-full">
+            <motion.div 
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                className="flex gap-4 max-w-3xl mx-auto w-full items-center"
+            >
               <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0">
                 <Loader2 size={16} className={`${selectedAgent.colorClass} animate-spin`} />
               </div>
-              <div className="flex items-center gap-1 text-xs font-mono text-slate-500 mt-2">
-                <span>PROCESSING</span>
-                <span className="animate-pulse">...</span>
+              
+              <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500 animate-pulse font-mono">
+                        {loadingText}
+                    </span>
+                  </div>
+                  {/* Progress Bar Decoration */}
+                  <div className="h-0.5 w-32 bg-slate-800 rounded-full overflow-hidden">
+                      <motion.div 
+                        className="h-full bg-emerald-500"
+                        initial={{ x: "-100%" }}
+                        animate={{ x: "100%" }}
+                        transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                      />
+                  </div>
               </div>
             </motion.div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
         <div className="p-4 bg-gradient-to-t from-black via-black to-transparent">
           <div className="max-w-3xl mx-auto">
             <AnimatePresence>
@@ -544,7 +638,6 @@ function PiraChatContent() {
         </div>
       </div>
 
-      {/* --- UNLOCK MODAL --- */}
       <AnimatePresence>
         {unlockModalOpen && agentToUnlock && (
           <motion.div
@@ -561,12 +654,10 @@ function PiraChatContent() {
               className="bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Background Glow */}
               <div className={`absolute top-0 right-0 w-32 h-32 bg-${agentToUnlock.themeColor}-500/20 blur-[50px] rounded-full pointer-events-none`}></div>
 
               <div className="text-center mb-8 relative z-10">
                 <div className={`mx-auto w-20 h-20 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 mb-4 ${agentToUnlock.colorClass}`}>
-                    {/* Render Icon Component */}
                     {React.createElement(agentToUnlock.icon, { size: 40 })}
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2">{agentToUnlock.name}</h3>

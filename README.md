@@ -5,7 +5,7 @@ Founder copilot built with Next.js, Firebase, and Gemini. This doc is meant for 
 ## Tech Stack
 - Next.js 16 (App Router), React 19, TypeScript, Tailwind, Framer Motion.
 - Firebase Auth + Firestore.
-- Gemini via `@google/generative-ai` (v1 endpoints, model `models/gemini-1.5-flash-002` text-only).
+- Gemini via `@google/generative-ai` (v1 endpoints, model `models/gemini-pro` text-only).
 
 ## Environment
 Create `.env.local` with:

@@ -15,6 +15,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import BrainStats from "@/components/BrainStats";
+
 import {
   Compass,
   MessageSquare,
@@ -218,6 +220,8 @@ export default function MissionControl() {
         </div>
       </motion.section>
 
+
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* --- SECTION 2: ACTIVE OPERATIONS --- */}
         <motion.div variants={cardVariants} className="lg:col-span-2 space-y-6">
@@ -299,6 +303,8 @@ export default function MissionControl() {
         </motion.div>
       </div>
 
+
+
       {/* --- SECTION 4: QUICK DEPLOY --- */}
       <motion.section variants={cardVariants} className="space-y-4">
         <div className="flex items-center gap-2 text-sm font-mono text-slate-500 uppercase tracking-widest">
@@ -344,7 +350,19 @@ export default function MissionControl() {
           })}
         </div>
       </motion.section>
+
+
+      {/* --- SECTION 5: NEURAL ENGINE STATUS --- */}
+      <div className="mb-8">
+   <h2 className="text-xl font-bold text-white mb-4">Neural Engine Status</h2>
+   <BrainStats variant="full" />
+</div>
+
+
+
     </motion.div>
+
+    
   );
 }
 

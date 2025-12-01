@@ -1,13 +1,12 @@
 // ============================================================================
 // 📁 Hardware Source: src/app/api/guest-chat/route.ts
 // 🕒 Date: 2025-11-30
-// 🧠 Version: v2.0 (Smart Model + Rate Limiting)
+// 🧠 Version: v3.0 (Deploy Ready)
 // ----------------------------------------------------------------------------
 // ✅ Logic:
-// 1. Identifies Guest via IP/User-Agent.
-// 2. Checks Firestore for daily rate limit.
-// 3. Auto-selects best available Gemini Model (2.0/1.5).
-// 4. Logs conversation to 'guest_chats'.
+// 1. Force Dynamic: Vital for Cloud Run deployment.
+// 2. Auto-selects best available Gemini Model.
+// 3. Logs conversation to 'guest_chats'.
 // ============================================================================
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -15,6 +14,9 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, query, where, getDocs, doc, getDoc, Timestamp } from "firebase/firestore";
 import { headers } from "next/headers";
+
+// ⚠️ این خط برای دپلوی روی Cloud Run حیاتی است
+export const dynamic = 'force-dynamic';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -25,6 +27,11 @@ export async function POST(req: Request) {
     const ip = headersList.get("x-forwarded-for") || "unknown";
     const userAgent = headersList.get("user-agent") || "unknown";
     const fingerprint = `${ip}-${userAgent}`;
+
+    // چک کردن db قبل از استفاده (برای اطمینان در زمان بیلد)
+    if (!db || !db.type) { 
+       return NextResponse.json({ error: "Database not initialized" }, { status: 503 });
+    }
 
     // 1. Get Global Limit
     const settingsRef = doc(db, "settings", "chat");
@@ -51,44 +58,30 @@ export async function POST(req: Request) {
       );
     }
 
-    // -----------------------------------------------------------
-    // 🔍 SMART MODEL SELECTION (Copy of Main Chat Logic)
-    // -----------------------------------------------------------
-    let targetModel = "gemini-1.5-flash"; // Default Fallback
-
+    // 3. Smart Model Selection
+    let targetModel = "gemini-1.5-flash"; 
     try {
+        // تلاش برای پیدا کردن بهترین مدل (برای جلوگیری از 404)
         const listReq = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);
         const listData = await listReq.json();
         
         if (listData.models) {
             const names = listData.models.map((m: any) => m.name);
-            // Priorities: Speed is key for landing page
-            const priorities = [
-                "models/gemini-2.0-flash", 
-                "models/gemini-1.5-flash",
-                "models/gemini-pro"
-            ];
+            const priorities = ["models/gemini-2.0-flash", "models/gemini-1.5-flash", "models/gemini-pro"];
             const found = priorities.find(p => names.includes(p));
             if (found) targetModel = found.replace("models/", ""); 
         }
     } catch (e) {
-        console.warn("Guest Chat: Model discovery failed, using default.");
+        // Fallback silently
     }
-    // -----------------------------------------------------------
 
     const model = genAI.getGenerativeModel({ model: targetModel });
 
-    // 3. Call AI
+    // 4. Call AI
     const prompt = `
 You are PIRAI, the AI mentor at North Road.
 You are chatting with a GUEST on the landing page.
-
-GUIDELINES:
-1. Keep answers SHORT (max 2-3 sentences).
-2. Be engaging and professional.
-3. If the question is complex, give a brief answer but suggest creating an account for a deep dive.
-4. Do NOT hallucinate features. You help with Strategy, Product, Finance, and Legal.
-
+GUIDELINES: Keep answers SHORT (max 3 sentences). Be engaging.
 USER QUESTION: "${message}"
     `;
 
@@ -96,7 +89,7 @@ USER QUESTION: "${message}"
     const response = await result.response;
     const text = response.text();
 
-    // 4. Save Chat Log
+    // 5. Save Chat Log
     await addDoc(chatsRef, {
       fingerprint,
       ip,
@@ -111,10 +104,8 @@ USER QUESTION: "${message}"
 
   } catch (error: any) {
     console.error("❌ Guest Chat Error:", error.message);
-    
-    // Friendly error for frontend
     return NextResponse.json(
-      { error: "System overload. Please try again or sign up." },
+      { error: "System overload. Please try again later." },
       { status: 500 }
     );
   }

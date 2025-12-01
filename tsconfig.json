@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "src/app/page.tsx", "src/app/page.tsx.bk2"  ],
+, "src/app/page.tsx", "src/app/page.tsx.bk2", "next.config.ts.bk", "next.config.mjs"  ],
   "exclude": ["node_modules"]
 }
