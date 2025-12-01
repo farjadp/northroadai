@@ -24,7 +24,13 @@ import { FieldValue } from "firebase-admin/firestore";
 // Force dynamic rendering for Cloud Run/Vercel
 export const dynamic = 'force-dynamic';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const createGenAI = () => {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) {
+    throw new Error("GEMINI_API_KEY missing");
+  }
+  return new GoogleGenerativeAI(key);
+};
 
 export async function POST(req: Request) {
   try {
@@ -74,7 +80,7 @@ export async function POST(req: Request) {
     // 4. PERSONALIZED WELCOME (SPECIAL CASE)
     // =================================================================
     if (message === "GENERATE_WELCOME_MESSAGE" && startupContext) {
-        const welcomeModel = genAI.getGenerativeModel({ model: targetModel });
+        const welcomeModel = createGenAI().getGenerativeModel({ model: targetModel });
         const welcomePrompt = `
         You are PIRAI, a startup mentor.
         The user has just logged in. They have the following profile:
@@ -101,7 +107,7 @@ export async function POST(req: Request) {
         { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
     ];
 
-    const model = genAI.getGenerativeModel({ 
+    const model = createGenAI().getGenerativeModel({ 
         model: targetModel,
         safetySettings: safetySettings 
     });

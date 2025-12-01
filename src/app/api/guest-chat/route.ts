@@ -18,7 +18,13 @@ import { headers } from "next/headers";
 // ⚠️ این خط برای دپلوی روی Cloud Run حیاتی است
 export const dynamic = 'force-dynamic';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const createGenAI = () => {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) {
+    throw new Error("GEMINI_API_KEY missing");
+  }
+  return new GoogleGenerativeAI(key);
+};
 
 export async function POST(req: Request) {
   try {
@@ -75,7 +81,7 @@ export async function POST(req: Request) {
         // Fallback silently
     }
 
-    const model = genAI.getGenerativeModel({ model: targetModel });
+    const model = createGenAI().getGenerativeModel({ model: targetModel });
 
     // 4. Call AI
     const prompt = `

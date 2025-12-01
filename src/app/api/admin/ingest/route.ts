@@ -17,7 +17,13 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const dynamic = 'force-dynamic';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const createGenAI = () => {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) {
+    throw new Error("GEMINI_API_KEY missing");
+  }
+  return new GoogleGenerativeAI(key);
+};
 
 export async function POST(req: Request) {
   try {
@@ -58,7 +64,7 @@ export async function POST(req: Request) {
     console.log(`📦 Found ${rows.length} items. Starting embedding...`);
 
     // 3. آماده‌سازی برای پردازش
-    const embedModel = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    const embedModel = createGenAI().getGenerativeModel({ model: "text-embedding-004" });
     const batch = adminDb.batch();
     const collectionRef = adminDb.collection("knowledge_base");
     

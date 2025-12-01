@@ -18,7 +18,13 @@ import os from "os";
 // ⚠️ حیاتی برای Cloud Run (جلوگیری از کش شدن استاتیک)
 export const dynamic = 'force-dynamic';
 
-const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY!);
+const createFileManager = () => {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) {
+    throw new Error("GEMINI_API_KEY missing");
+  }
+  return new GoogleAIFileManager(key);
+};
 
 export async function POST(req: Request) {
   // تعریف مسیر فایل بیرون از try برای دسترسی در finally
@@ -53,7 +59,7 @@ export async function POST(req: Request) {
 
     // 4. آپلود به Google AI
     console.log(`📤 Uploading to Google: ${file.name}`);
-    const uploadResponse = await fileManager.uploadFile(tempFilePath, {
+    const uploadResponse = await createFileManager().uploadFile(tempFilePath, {
       mimeType: file.type,
       displayName: file.name,
     });
