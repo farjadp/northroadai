@@ -4,6 +4,7 @@ import { motion, useAnimation, useInView } from "framer-motion";
 import { ArrowRight, Terminal, Globe, Cpu, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { TopNav } from "@/components/top-nav";
+import { SystemHealthPanel } from "@/components/system-health-panel";
 
 // --- COMPONENTS ---
 
@@ -98,6 +99,7 @@ export default function CreativeHome() {
             </div>
 
             {/* THE INPUT PORTAL (Instead of buttons) */}
+            <SystemHealthPanel className="w-full mb-8" />
             <ChatInterface />
           </div>
         </main>

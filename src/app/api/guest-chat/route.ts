@@ -14,6 +14,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, query, where, getDocs, doc, getDoc, Timestamp } from "firebase/firestore";
 import { headers } from "next/headers";
+import { logServiceStatus, logSystemAlert } from "@/lib/system-status";
 
 // ⚠️ این خط برای دپلوی روی Cloud Run حیاتی است
 export const dynamic = 'force-dynamic';
@@ -94,6 +95,7 @@ USER QUESTION: "${message}"
     const result = await model.generateContent([{ text: prompt }]);
     const response = await result.response;
     const text = response.text();
+    logServiceStatus("Guest Chat API", true, `Model ${targetModel} responded`);
 
     // 5. Save Chat Log
     await addDoc(chatsRef, {
@@ -110,6 +112,13 @@ USER QUESTION: "${message}"
 
   } catch (error: any) {
     console.error("❌ Guest Chat Error:", error.message);
+    logServiceStatus("Guest Chat API", false, error.message || "Unknown guest chat failure");
+    logSystemAlert({
+      service: "Guest Chat API",
+      message: error.message ?? "Unknown guest chat failure",
+      severity: "critical",
+      detail: error.stack,
+    });
     return NextResponse.json(
       { error: "System overload. Please try again later." },
       { status: 500 }
