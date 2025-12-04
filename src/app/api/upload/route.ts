@@ -14,6 +14,8 @@ import { NextResponse } from "next/server";
 import { writeFile, unlink } from "fs/promises";
 import path from "path";
 import os from "os";
+import { logSystemEvent } from "@/lib/logger";
+
 
 // ⚠️ حیاتی برای Cloud Run (جلوگیری از کش شدن استاتیک)
 export const dynamic = 'force-dynamic';
@@ -27,6 +29,8 @@ const createFileManager = () => {
 };
 
 export async function POST(req: Request) {
+  await logSystemEvent("AI_CHAT", `User asked: ${message.substring(0,20)}...`, userId);
+
   // تعریف مسیر فایل بیرون از try برای دسترسی در finally
   let tempFilePath = "";
 

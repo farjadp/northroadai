@@ -1,3 +1,8 @@
+// ============================================================================
+// 📁 Hardware Source: src/app/actions/admin-user-actions.ts
+// 🧠 Version: v2.0 (Safe Date Handling & Index Warning)
+// ============================================================================
+
 "use server";
 
 import { adminDb, adminAuth } from "@/lib/firebase-admin";
@@ -11,7 +16,7 @@ export interface AdminUser {
     email: string;
     displayName: string;
     role: UserRole;
-    createdAt: string; // ISO string for client
+    createdAt: string; 
     lastLogin?: string;
 }
 
@@ -39,18 +44,17 @@ export async function getUsers(
     try {
         let query: FirebaseFirestore.Query = adminDb.collection("users");
 
+        // اعمال فیلتر نقش
         if (roleFilter && roleFilter !== "all") {
             query = query.where("role", "==", roleFilter);
         }
 
-        // Get total count (approximation for scalability, or separate counter)
-        // For < 1000 users, snapshot.size is fine.
-        const snapshot = await query.get();
-        const total = snapshot.size;
+        // شمارش کل (برای پیجینیشن)
+        const countSnapshot = await query.count().get();
+        const total = countSnapshot.data().count;
 
-        // Pagination
-        // Note: Offset is expensive in Firestore. Cursor-based is better.
-        // For this MVP, we'll use offset but limit it.
+        // دریافت یوزرها با سورت و پیجینیشن
+        // ⚠️ نکته مهم: اگر ارور "The query requires an index" دیدید، لینک داخل ترمینال را کلیک کنید
         const usersSnap = await query
             .orderBy("createdAt", "desc")
             .offset((page - 1) * limit)
@@ -59,72 +63,82 @@ export async function getUsers(
 
         const users: AdminUser[] = usersSnap.docs.map(doc => {
             const data = doc.data();
+            
+            // ✅ هندلینگ امن تاریخ (Safe Date Parsing)
+            let createdIso = new Date().toISOString();
+            try {
+                if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+                    createdIso = data.createdAt.toDate().toISOString();
+                } else if (data.createdAt && typeof data.createdAt === 'string') {
+                    createdIso = data.createdAt; // اگر قبلا string ذخیره شده بود
+                }
+            } catch (e) {
+                console.warn(`Date parse warning for user ${doc.id}`);
+            }
+
             return {
                 uid: doc.id,
-                email: data.email,
+                email: data.email || "",
                 displayName: data.displayName || data.fullName || "Unknown",
-                role: data.role || "user",
-                createdAt: data.createdAt?.toDate().toISOString() || new Date().toISOString(),
-                lastLogin: data.lastLogin?.toDate().toISOString()
+                role: (data.role as UserRole) || "user",
+                createdAt: createdIso,
+                lastLogin: data.lastLogin?.toDate?.()?.toISOString()
             };
         });
 
         return { users, total };
-    } catch (error) {
+    } catch (error: any) {
+        // 🚨 تشخیص ارور ایندکس فایربیس
+        if (error.message && error.message.includes("requires an index")) {
+            console.error("🛑 MISSING INDEX ERROR: Please create the index using the link below:");
+            console.error(error.message); // لینک ساخت ایندکس اینجا چاپ میشود
+            throw new Error("System requires a database index. Check server logs.");
+        }
+        
         console.error("Error fetching users:", error);
-        throw new Error("Failed to fetch users");
+        throw new Error(`Failed to fetch users: ${error.message}`);
     }
 }
 
 // 2. Create User
 export async function createUser(data: CreateUserDTO) {
     try {
-        // Create in Auth
         const userRecord = await adminAuth.createUser({
             email: data.email,
             displayName: data.fullName,
-            emailVerified: true, // Auto-verify since admin created
-            password: Math.random().toString(36).slice(-8) + "Aa1!", // Temp random password
+            emailVerified: true,
+            password: Math.random().toString(36).slice(-8) + "Aa1!", 
         });
 
-        // Set Custom Claims
         await adminAuth.setCustomUserClaims(userRecord.uid, { role: data.role });
 
-        // Create in Firestore
+        // ذخیره در فایراستور با تاریخ استاندارد
         await adminDb.collection("users").doc(userRecord.uid).set({
             uid: userRecord.uid,
             email: data.email,
             displayName: data.fullName,
             role: data.role,
-            createdAt: Timestamp.now(),
+            createdAt: Timestamp.now(), // استفاده از Timestamp فایربیس
             updatedAt: Timestamp.now(),
             metadata: { forceRefresh: true }
         });
 
-        // Send Password Reset Email
-        const link = await adminAuth.generatePasswordResetLink(data.email);
-        // In a real app, send this via email service (SendGrid/Resend).
-        // For now, we'll log it or return it if needed for testing.
-        console.log(`[MOCK EMAIL] Password Reset Link for ${data.email}: ${link}`);
-
         return { success: true, uid: userRecord.uid };
-    } catch (error: unknown) {
+    } catch (error: any) {
         console.error("Error creating user:", error);
-        return { success: false, error: error instanceof Error ? error.message : "Failed to create user" };
+        return { success: false, error: error.message };
     }
 }
 
 // 3. Edit User
 export async function editUser(data: EditUserDTO) {
     try {
-        const updates: Record<string, unknown> = { updatedAt: Timestamp.now() };
+        const updates: Record<string, any> = { updatedAt: Timestamp.now() };
         if (data.email) updates.email = data.email;
         if (data.fullName) updates.displayName = data.fullName;
 
-        // Update Firestore
         await adminDb.collection("users").doc(data.uid).update(updates);
 
-        // Update Auth
         if (data.email || data.fullName) {
             await adminAuth.updateUser(data.uid, {
                 email: data.email,
@@ -133,9 +147,9 @@ export async function editUser(data: EditUserDTO) {
         }
 
         return { success: true };
-    } catch (error: unknown) {
+    } catch (error: any) {
         console.error("Error editing user:", error);
-        return { success: false, error: error instanceof Error ? error.message : "Failed to edit user" };
+        return { success: false, error: error.message };
     }
 }
 
@@ -144,30 +158,23 @@ export async function deleteUser(uid: string) {
     try {
         await adminAuth.deleteUser(uid);
         await adminDb.collection("users").doc(uid).delete();
-        // Cleanup other collections (mentor_profiles, etc.) if needed
         return { success: true };
-    } catch (error: unknown) {
-        console.error("Error deleting user:", error);
-        return { success: false, error: error instanceof Error ? error.message : "Failed to delete user" };
+    } catch (error: any) {
+        return { success: false, error: error.message };
     }
 }
 
 // 5. Set User Role
 export async function setUserRole(uid: string, role: UserRole) {
     try {
-        // Update Custom Claims
         await adminAuth.setCustomUserClaims(uid, { role });
-
-        // Update Firestore
         await adminDb.collection("users").doc(uid).update({
             role,
             updatedAt: Timestamp.now(),
             "metadata.forceRefresh": true
         });
-
         return { success: true };
-    } catch (error: unknown) {
-        console.error("Error setting role:", error);
-        return { success: false, error: error instanceof Error ? error.message : "Failed to set role" };
+    } catch (error: any) {
+        return { success: false, error: error.message };
     }
 }

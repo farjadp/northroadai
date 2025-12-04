@@ -1,6 +1,6 @@
 // ============================================================================
 // 📁 Hardware Source: src/components/chat/message-bubble.tsx
-// 🧠 Logic: Renders Markdown and styles **bold** text with Brand Color.
+// 🧠 Logic: Renders Markdown safely (TypeScript friendly).
 // ============================================================================
 
 import React from 'react';
@@ -13,23 +13,25 @@ interface MessageBubbleProps {
 }
 
 export const MessageBubble = ({ content, isUser }: MessageBubbleProps) => {
+  if (isUser) {
+    return <div className="whitespace-pre-wrap">{content}</div>;
+  }
+
   return (
-    <div className={`text-sm leading-relaxed overflow-hidden ${isUser ? 'text-white' : 'text-slate-300'}`}>
+    <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-headings:text-emerald-400">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          // 1. تغییر استایل Bold (**text**)
-          strong: ({ node, ...props }) => (
+          // حذف 'node' از ورودی‌ها برای جلوگیری از ارور تایپ‌اسکریپت
+          strong: ({ ...props }) => (
             <span 
-              className={`font-bold ${isUser ? 'text-white underline decoration-white/30' : 'text-emerald-400'}`} 
+              className="font-bold text-emerald-400" 
               {...props} 
             />
           ),
-          // 2. تغییر استایل لیست‌ها
-          ul: ({ node, ...props }) => <ul className="list-disc pl-4 space-y-1 my-2" {...props} />,
-          ol: ({ node, ...props }) => <ol className="list-decimal pl-4 space-y-1 my-2" {...props} />,
-          // 3. تغییر استایل لینک‌ها
-          a: ({ node, ...props }) => (
+          ul: ({ ...props }) => <ul className="list-disc pl-4 space-y-1 my-2" {...props} />,
+          ol: ({ ...props }) => <ol className="list-decimal pl-4 space-y-1 my-2" {...props} />,
+          a: ({ ...props }) => (
             <a 
               className="text-blue-400 hover:text-blue-300 underline underline-offset-2" 
               target="_blank" 
@@ -37,8 +39,7 @@ export const MessageBubble = ({ content, isUser }: MessageBubbleProps) => {
               {...props} 
             />
           ),
-          // 4. پاراگراف‌ها
-          p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+          p: ({ ...props }) => <p className="mb-2 last:mb-0" {...props} />,
         }}
       >
         {content}

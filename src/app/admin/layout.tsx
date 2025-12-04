@@ -12,7 +12,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, Database, Settings, LogOut, TerminalSquare, KeySquare } from "lucide-react";
+import { LayoutDashboard, Users, Database, Settings, LogOut, TerminalSquare, KeySquare, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils"; // مطمئن شوید فایل utils دارید یا این را حذف کنید
 import { useAuth } from "@/context/auth-context";
 
@@ -66,6 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Packages", href: "/admin/packages", icon: <KeySquare size={18} /> },
     { name: "Chat Settings", href: "/admin/settings/chat", icon: <Settings size={18} /> },
     { name: "Mentors", href: "/dashboard/mentors", icon: <Users size={18} /> },
+    { name: "Business Analytics", href: "/admin/business", icon: <TrendingUp size={18} /> },
     { name: "System Logs", href: "/admin/logs", icon: <TerminalSquare size={18} /> },
   ];
 

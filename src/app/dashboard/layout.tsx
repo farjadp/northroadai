@@ -1,13 +1,18 @@
 // ============================================================================
 // 📁 Hardware Source: src/app/dashboard/layout.tsx
-// 🕒 Date: 2025-12-01
-// 🧠 Version: v3.1 (Added Settings Menu)
+// 🕒 Date: 2025-12-04
+// 🧠 Version: v4.0 (Complete Navigation including Arena)
 // ----------------------------------------------------------------------------
 // ✅ Logic:
 // - Main User Dashboard Layout.
-// - Navigation for Mission Control, Chat, Profile, Mentors, Community.
-// - ADDED: Settings menu item.
-// - Spotlight effect and User Auth integration.
+// - Navigation Items:
+//   1. Mission Control
+//   2. Chat
+//   3. THE ARENA (New) 🥊
+//   4. Resources
+//   5. DNA
+//   6. Mentors
+//   7. Settings
 // ============================================================================
 
 "use client";
@@ -19,9 +24,10 @@ import {
   User,
   MessageSquare,
   LayoutGrid,
-  Settings, // Icon for settings
-  Zap,
+  Settings,
   LogOut,
+  Library, // برای Resources
+  Swords,  // برای Arena (آیکون شمشیر)
   Users 
 } from "lucide-react";
 
@@ -69,13 +75,15 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
     router.push("/login"); 
   };
 
+  // لیست کامل منو
   const navItems = [
     { name: "Mission Control", href: "/dashboard", icon: <LayoutGrid size={18} /> },
     { name: "PIRAI Chat", href: "/dashboard/chat", icon: <MessageSquare size={18} /> },
+    { name: "The Arena", href: "/dashboard/arena", icon: <Swords size={18} /> }, // 🥊 اضافه شد
+    { name: "Resources", href: "/dashboard/resources", icon: <Library size={18} /> },
     { name: "Startup DNA", href: "/dashboard/profile", icon: <User size={18} /> },
     { name: "Mentors", href: "/dashboard/mentors", icon: <Users size={18} /> },
-    { name: "Community", href: "/dashboard/community", icon: <Users size={18} /> },
-    { name: "Settings", href: "/dashboard/settings", icon: <Settings size={18} /> }, // ✅ ADDED THIS LINE
+    { name: "Settings", href: "/dashboard/settings", icon: <Settings size={18} /> },
   ];
 
   return (
@@ -95,18 +103,24 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
           <nav className="space-y-2">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
+              const isArena = item.href === "/dashboard/arena";
+              
               return (
                 <Link key={item.href} href={item.href}>
-                  <div className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-300 group ${isActive
+                  <div className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-300 group ${
+                      isActive
                       ? "bg-white/5 text-white border border-white/10 shadow-inner"
                       : "text-slate-500 hover:text-cyan-400 hover:bg-white/5"
-                    }`}>
-                    <div className={isActive ? "text-cyan-400" : "group-hover:text-cyan-400 transition"}>
+                    } ${isArena && !isActive ? "hover:text-red-500 hover:bg-red-950/10" : ""}`}> {/* استایل قرمز برای آرنا */}
+                    
+                    <div className={isActive ? (isArena ? "text-red-500" : "text-cyan-400") : "group-hover:text-current transition"}>
                       {item.icon}
                     </div>
+                    
                     <span className="hidden md:block">{item.name}</span>
+                    
                     {isActive && (
-                      <div className="ml-auto w-1.5 h-1.5 bg-cyan-500 rounded-full shadow-[0_0_8px_rgba(6,182,212,0.8)] hidden md:block"></div>
+                      <div className={`ml-auto w-1.5 h-1.5 rounded-full hidden md:block ${isArena ? "bg-red-500 shadow-[0_0_8px_#ef4444]" : "bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)]"}`}></div>
                     )}
                   </div>
                 </Link>
@@ -117,7 +131,6 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
 
         {/* Footer Actions */}
         <div className="border-t border-white/5 pt-6 flex flex-col gap-4">
-          {/* User Profile Mini-Card */}
           <div className="flex items-center gap-3 px-2 md:px-0 justify-center md:justify-start">
             {user?.photoURL ? (
               <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full border border-white/10" />
@@ -147,7 +160,6 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
             SYSTEM: ONLINE
           </div>
-          {/* Header Avatar (Mobile/Desktop) */}
           <div className="flex items-center gap-4">
             {user?.photoURL && (
               <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-full border border-white/10" />

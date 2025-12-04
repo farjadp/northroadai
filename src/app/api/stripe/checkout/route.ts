@@ -1,19 +1,33 @@
-// src/app/api/stripe/checkout/route.ts
+// ============================================================================
+// 📁 Hardware Source: src/app/api/stripe/checkout/route.ts
+// 🧠 Version: v2.0 (Direct Email Injection)
+// ----------------------------------------------------------------------------
+// ✅ Fixes: Removes dependency on adminAuth.getUser() which might fail on Cloud Run.
+// ✅ Logic: Accepts email directly from client request.
+// ============================================================================
+
 import { NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
-import { AGENTS } from "@/lib/agents"; // فایل ایجنت‌ها
-import { useAuth } from "@/context/AuthContext"; // (اینجا سمت سرور هستیم، کانتکست نداریم، از بادی میگیریم)
+import { stripe, APP_URL } from "@/lib/stripe";
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const { agentId, userId } = await req.json();
+    // دریافت ایمیل مستقیم از کلاینت
+    const { userId, userEmail, agentId } = await req.json();
 
-    const agent = AGENTS.find(a => a.id === agentId);
-    if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 400 });
+    if (!userId || !userEmail) {
+        return NextResponse.json({ error: "Missing user credentials" }, { status: 400 });
+    }
 
-    // ساخت لینک پرداخت
+    // چک کردن کلید استرایپ
+    if (!process.env.STRIPE_SECRET_KEY) {
+        console.error("❌ STRIPE_SECRET_KEY is missing in env vars");
+        return NextResponse.json({ error: "Server misconfiguration: Stripe Key missing" }, { status: 500 });
+    }
+
+    console.log(`💳 Creating checkout for: ${userEmail}`);
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -21,30 +35,30 @@ export async function POST(req: Request) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `Unlock ${agent.name}`,
-              description: `Lifetime access to ${agent.name} (${agent.role})`,
-              images: ["https://northroad.ai/logo.png"], // لینک لوگوی خودتان را بگذارید
+              name: "North Road AI - Agent Unlock",
+              description: "Lifetime access to Premium Agent",
+              images: ["https://northroad.ai/logo.png"], // اختیاری
             },
-            unit_amount: 900, // 9.00 دلار (به سنت)
+            unit_amount: 900, // $9.00
           },
           quantity: 1,
         },
       ],
-      mode: "payment", // پرداخت یکبار (برای اشتراک بذارید subscription)
-      success_url: `${process.env.BASE_URL}/dashboard/chat?success=true`,
-      cancel_url: `${process.env.BASE_URL}/dashboard/chat?canceled=true`,
-      // 🔥 بخش حیاتی: ذخیره اطلاعات برای وب‌هوک
+      mode: "payment",
+      success_url: `${APP_URL}/dashboard/chat?payment=success`,
+      cancel_url: `${APP_URL}/dashboard/chat?payment=cancelled`,
+      customer_email: userEmail, // ایمیل را مستقیم ست میکنیم
       metadata: {
         userId: userId,
-        agentId: agentId,
-        type: "agent_unlock"
+        agentId: agentId || "general", // ذخیره میکنیم که چه چیزی خریده
+        type: "AGENT_UNLOCK"
       },
     });
 
     return NextResponse.json({ url: session.url });
 
   } catch (error: any) {
-    console.error("Stripe Error:", error);
+    console.error("❌ Stripe Checkout Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

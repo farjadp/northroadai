@@ -267,36 +267,36 @@ function PiraChatContent() {
   };
 
 const handleUnlock = async () => {
-  if (!agentToUnlock || !user) return;
-  
-  // تغییر متن دکمه به Loading...
-  // (می‌توانید یک state مثل isProcessingPayment اضافه کنید)
+    if (!agentToUnlock || !user) return;
+    
+    // تغییر متن دکمه به حالت لودینگ (اختیاری ولی خوبه)
+    // alert("Connecting to Stripe..."); 
 
-  try {
-    const res = await fetch("/api/stripe/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: user.uid,
-        agentId: agentToUnlock.id
-      }),
-    });
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.uid,
+          userEmail: user.email, // 🔥 اضافه شد: ارسال ایمیل
+          agentId: agentToUnlock.id
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.url) {
-      // رایرکت کاربر به صفحه پرداخت استرایپ
-      window.location.href = data.url;
-    } else {
-      alert("Error creating payment session");
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        // نمایش ارور دقیق سرور
+        alert("Payment Error: " + (data.error || "Unknown error"));
+      }
+
+    } catch (error: any) {
+      console.error("Payment Error:", error);
+      alert("Failed to connect to payment server.");
     }
-
-  } catch (error) {
-    console.error("Payment Error:", error);
-    alert("Payment failed.");
-  }
-};
-
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
