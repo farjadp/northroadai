@@ -1,18 +1,8 @@
-// ============================================================================
-// 📁 Hardware Source: src/app/mentor/[uid]/page.tsx
-// 🕒 Date: 2025-12-01
-// 🧠 Version: v1.0 (Public Profile View)
-// ----------------------------------------------------------------------------
-// ✅ Logic:
-// - Public-facing mentor profile.
-// - Hero section with avatar and headline.
-// - Stats grid and expertise tags.
-// - Portfolio timeline visualization.
-// ============================================================================
+"use client";
 
-import React from "react";
-import { notFound } from "next/navigation";
-import { getMentorProfile } from "@/app/actions/mentor-profile-actions";
+import React, { useEffect, useState, Suspense } from "react";
+import { notFound, useSearchParams } from "next/navigation";
+import { fetchMentorProfile } from "@/lib/api-services";
 import {
     Briefcase,
     Award,
@@ -25,14 +15,36 @@ import {
     CheckCircle2
 } from "lucide-react";
 
-export default async function MentorPublicProfile({ params }: { params: { uid: string } }) {
-    const result = await getMentorProfile(params.uid);
+function MentorPublicProfileContent() {
+    const searchParams = useSearchParams();
+    const uid = searchParams.get("uid");
 
-    if (!result.success || !result.profile) {
-        notFound();
-    }
+    const [profile, setProfile] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
 
-    const profile = result.profile as any; // Type assertion for server-side data
+    useEffect(() => {
+        if (!uid) {
+            setLoading(false);
+            return;
+        }
+
+        fetchMentorProfile(uid).then(result => {
+            if (result.success && result.profile) {
+                setProfile(result.profile);
+            } else {
+                setError(true);
+            }
+            setLoading(false);
+        }).catch(() => {
+            setError(true);
+            setLoading(false);
+        });
+    }, [uid]);
+
+    if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-slate-500">Loading Profile...</div>;
+    if (error || !profile) return <div className="min-h-screen bg-black flex items-center justify-center text-red-500">Profile not found.</div>;
+    if (!uid) return <div className="min-h-screen bg-black flex items-center justify-center text-slate-500">No User ID provided.</div>;
 
     // Determine outcome styling
     const getOutcomeBadge = (outcome: string) => {
@@ -211,5 +223,13 @@ export default async function MentorPublicProfile({ params }: { params: { uid: s
             </div>
 
         </div>
+    );
+}
+
+export default function MentorPublicProfile() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-slate-500">Loading Profile...</div>}>
+            <MentorPublicProfileContent />
+        </Suspense>
     );
 }

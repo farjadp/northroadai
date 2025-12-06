@@ -9,36 +9,38 @@
 // This enforces the business model (Upsell).
 // ============================================================================
 
-import { 
-    Compass, 
-    Hammer, 
-    CircleDollarSign, 
-    Scale, 
-    Zap, 
-    LucideIcon 
+import {
+   Compass,
+   Hammer,
+   CircleDollarSign,
+   Scale,
+   Zap,
+   LucideIcon
 } from "lucide-react";
 
 export interface Agent {
-    id: string;
-    name: string;
-    description: string;
-    systemPrompt: string;
-    icon: LucideIcon;
-    themeColor: string;
-    colorClass: string;
-    isPremium: boolean;
+   id: string;
+   name: string;
+   description: string;
+   systemPrompt: string;
+   icon: LucideIcon;
+   themeColor: string;
+   colorClass: string;
+   isPremium: boolean;
+   role: string; // Added for UI display
 }
 
 export const AGENTS: Agent[] = [
-    {
-        id: "navigator",
-        name: "The Navigator",
-        description: "Strategy & General – Your default mentor for pitch reviews and mental support.",
-        icon: Compass,
-        themeColor: "emerald",
-        colorClass: "text-emerald-400",
-        isPremium: false,
-        systemPrompt: `
+   {
+      id: "navigator",
+      name: "The Navigator",
+      description: "Strategy & General – Your default mentor for pitch reviews and mental support.",
+      icon: Compass,
+      themeColor: "emerald",
+      colorClass: "text-emerald-400",
+      isPremium: false,
+      role: "Strategy Lead",
+      systemPrompt: `
 You are THE NAVIGATOR, the General Strategist at North Road AI.
 
 === YOUR PRIMARY DIRECTIVE ===
@@ -61,16 +63,17 @@ You are NOT a specialist. To protect the user from generic advice, you must REFU
 - When reviewing pitches, focus on the Narrative Arc and the "Why".
 - Act like a YC Partner: Empathetic but brutally honest about the business viability.
         `
-    },
-    {
-        id: "builder",
-        name: "The Builder",
-        description: "Product & PMF – MVP definition, user interviews, tech stack advice.",
-        icon: Hammer,
-        themeColor: "blue",
-        colorClass: "text-blue-400",
-        isPremium: true,
-        systemPrompt: `
+   },
+   {
+      id: "builder",
+      name: "The Builder",
+      description: "Product & PMF – MVP definition, user interviews, tech stack advice.",
+      icon: Hammer,
+      themeColor: "blue",
+      colorClass: "text-blue-400",
+      isPremium: true,
+      role: "Product Lead",
+      systemPrompt: `
 You are THE BUILDER, the Product & Engineering Lead.
 
 === YOUR PRIMARY DIRECTIVE ===
@@ -90,16 +93,17 @@ Stay in your lane. You are an engineer, not a lawyer or accountant.
 - Always ask: "What is the absolute minimum version we can ship?"
 - Recommend specific stacks (Next.js, Supabase, Firebase) over generic advice.
         `
-    },
-    {
-        id: "ledger",
-        name: "The Ledger",
-        description: "Finance & Fundraising – Burn rate analysis, financial modeling, VC strategy.",
-        icon: CircleDollarSign,
-        themeColor: "amber",
-        colorClass: "text-amber-400",
-        isPremium: true,
-        systemPrompt: `
+   },
+   {
+      id: "ledger",
+      name: "The Ledger",
+      description: "Finance & Fundraising – Burn rate analysis, financial modeling, VC strategy.",
+      icon: CircleDollarSign,
+      themeColor: "amber",
+      colorClass: "text-amber-400",
+      isPremium: true,
+      role: "Finance Lead",
+      systemPrompt: `
 You are THE LEDGER, the CFO & Fundraising Expert.
 
 === YOUR PRIMARY DIRECTIVE ===
@@ -119,16 +123,17 @@ You deal with numbers, not code or law.
 - Always calculate runway when discussing costs.
 - Demand numbers. "Show me the data."
         `
-    },
-    {
-        id: "counsel",
-        name: "The Counsel",
-        description: "Legal & Compliance – IP, incorporation, agreements, SUV visa.",
-        icon: Scale,
-        themeColor: "purple",
-        colorClass: "text-purple-400",
-        isPremium: true,
-        systemPrompt: `
+   },
+   {
+      id: "counsel",
+      name: "The Counsel",
+      description: "Legal & Compliance – IP, incorporation, agreements, SUV visa.",
+      icon: Scale,
+      themeColor: "purple",
+      colorClass: "text-purple-400",
+      isPremium: true,
+      role: "Legal Lead",
+      systemPrompt: `
 You are THE COUNSEL, the Legal & Compliance Officer.
 
 === YOUR PRIMARY DIRECTIVE ===
@@ -148,16 +153,17 @@ You are a lawyer persona. You do not do marketing or coding.
 - ALWAYS start or end with: "This is educational guidance, not legal advice. Consult a qualified attorney."
 - Cite specific Canadian/US regulations where applicable.
         `
-    },
-    {
-        id: "rainmaker",
-        name: "The Rainmaker",
-        description: "Growth & Sales – GTM strategy, cold email, pricing, ad campaigns.",
-        icon: Zap,
-        themeColor: "rose",
-        colorClass: "text-rose-400",
-        isPremium: true,
-        systemPrompt: `
+   },
+   {
+      id: "rainmaker",
+      name: "The Rainmaker",
+      description: "Growth & Sales – GTM strategy, cold email, pricing, ad campaigns.",
+      icon: Zap,
+      themeColor: "rose",
+      colorClass: "text-rose-400",
+      isPremium: true,
+      role: "Growth Lead",
+      systemPrompt: `
 You are THE RAINMAKER, the Growth & Sales Lead.
 
 === YOUR PRIMARY DIRECTIVE ===
@@ -177,14 +183,14 @@ You chase revenue. You don't do legal or accounting.
 - Use frameworks like AIDA (Attention, Interest, Desire, Action).
 - Focus on Metrics: Conversion Rate, Churn, CTR.
         `
-    }
+   }
 ];
 
 // Helper Functions
 export const getAgentById = (id: string): Agent | undefined => {
-    return AGENTS.find(agent => agent.id === id);
+   return AGENTS.find(agent => agent.id === id);
 };
 
 export const getDefaultAgent = (): Agent => {
-    return AGENTS[0]; // Navigator
+   return AGENTS[0]; // Navigator
 };

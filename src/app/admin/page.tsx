@@ -13,6 +13,7 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Activity, ArrowUpRight, Cpu, Users, Search, Database, DollarSign } from "lucide-react";
 import { SystemHealthPanel } from "@/components/system-health-panel";
+import { getApiUrl } from "@/lib/api-config";
 
 // --- SUB-COMPONENTS ---
 
@@ -53,7 +54,7 @@ const LiveLog = () => {
     // Poll for recent logs
     const fetchRecentLogs = async () => {
       try {
-        const res = await fetch("/api/admin/logs?limit=8");
+        const res = await fetch(getApiUrl("/api/admin/logs?limit=8"));
         const data = await res.json();
         if (data.logs) {
           setLogs(data.logs.map((l: any) => `[${l.ts.split(",")[1].trim()}] ${l.title}: ${l.detail.substring(0, 30)}...`));
@@ -94,7 +95,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch("/api/admin/stats");
+        const res = await fetch(getApiUrl("/api/admin/stats"));
         const data = await res.json();
         if (data.metrics) setMetrics(data.metrics);
       } catch (e) { console.error("Stats error", e); }

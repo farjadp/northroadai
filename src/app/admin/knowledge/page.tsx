@@ -15,6 +15,7 @@ import {
     Download, Check, LayoutGrid, Clock, Activity,
     Globe, Search, Link as LinkIcon, Users, Shield
 } from "lucide-react";
+import { getApiUrl } from "@/lib/api-config";
 
 // --- COMPONENT: AGENT SELECTOR ---
 function AgentSelector({ selected, onChange }: { selected: string[], onChange: (ids: string[]) => void }) {
@@ -56,7 +57,7 @@ function AgentSelector({ selected, onChange }: { selected: string[], onChange: (
 }
 
 export default function AdminKnowledgePage() {
-    const [activeTab, setActiveTab] = useState<"files" | "datasets" | "scrape">("files");
+    const [activeTab, setActiveTab] = useState<"files" | "datasets" | "scrape" | "history">("files");
 
     return (
         <div className="max-w-5xl mx-auto space-y-8">
@@ -70,7 +71,7 @@ export default function AdminKnowledgePage() {
                 </p>
             </header>
 
-            <div className="flex gap-4 border-b border-white/5 pb-1">
+            <div className="flex gap-4 border-b border-white/5 pb-1 overflow-x-auto">
                 <button onClick={() => setActiveTab("files")} className={`px-4 py-2 rounded-t-lg text-sm font-medium transition flex items-center gap-2 ${activeTab === "files" ? "bg-cyan-600 text-white" : "text-slate-400 hover:text-white"}`}>
                     <FileText size={16} /> Global Files
                 </button>
@@ -80,15 +81,17 @@ export default function AdminKnowledgePage() {
                 <button onClick={() => setActiveTab("scrape")} className={`px-4 py-2 rounded-t-lg text-sm font-medium transition flex items-center gap-2 ${activeTab === "scrape" ? "bg-emerald-600 text-white" : "text-slate-400 hover:text-white"}`}>
                     <Globe size={16} /> Web Scraper
                 </button>
+                <button onClick={() => setActiveTab("history")} className={`px-4 py-2 rounded-t-lg text-sm font-medium transition flex items-center gap-2 ${activeTab === "history" ? "bg-amber-600 text-white" : "text-slate-400 hover:text-white"}`}>
+                    <Clock size={16} /> History
+                </button>
             </div>
 
             <div className="min-h-[400px]">
                 {activeTab === "files" && <FilesView />}
                 {activeTab === "datasets" && <DatasetsView />}
                 {activeTab === "scrape" && <ScraperView />}
+                {activeTab === "history" && <IngestHistory />}
             </div>
-
-            <IngestHistory />
         </div>
     );
 }
@@ -111,27 +114,43 @@ function FilesView() {
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.length) return;
-        const file = e.target.files[0];
         setUploading(true);
 
+        const files = Array.from(e.target.files);
+        let successCount = 0;
+
         try {
-            const formData = new FormData();
-            formData.append("file", file);
-            // 🔥 ارسال لیست ایجنت‌ها به سرور (Note: Server currently doesn't read this, but we save it via KnowledgeService below)
-            formData.append("agents", JSON.stringify(targetAgents));
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append("file", file);
 
-            const res = await fetch("/api/upload", { method: "POST", body: formData });
-            if (!res.ok) throw new Error("Upload failed");
-            const { fileUri, mimeType } = await res.json();
+                try {
+                    const res = await fetch(getApiUrl("/api/upload"), { method: "POST", body: formData });
+                    if (!res.ok) throw new Error(`Failed to upload ${file.name}`);
+                    const { fileUri, mimeType } = await res.json();
 
-            await KnowledgeService.addGlobalDoc({
-                name: file.name,
-                mimeType,
-                fileUri,
-                targetAgents // ذخیره در دیتابیس
-            });
-            await fetchDocs();
-        } catch (error) { alert("Upload failed"); }
+                    await KnowledgeService.addGlobalDoc({
+                        name: file.name,
+                        mimeType,
+                        fileUri,
+                        targetAgents // Access Control applied here
+                    });
+                    successCount++;
+                } catch (err) {
+                    console.error(`Error uploading ${file.name}:`, err);
+                }
+            }
+
+            if (successCount > 0) {
+                await fetchDocs();
+                alert(`Successfully uploaded ${successCount}/${files.length} files.`);
+            } else {
+                alert("All uploads failed.");
+            }
+        } catch (error) {
+            console.error("Batch upload critical failure", error);
+            alert("Critical upload error");
+        }
         finally { setUploading(false); e.target.value = ""; }
     };
 
@@ -148,7 +167,7 @@ function FilesView() {
                 <AgentSelector selected={targetAgents} onChange={setTargetAgents} />
 
                 <div className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-cyan-500/50 transition-colors bg-black group mt-4">
-                    <input type="file" id="file-upload" className="hidden" onChange={handleUpload} accept=".pdf,.txt,.md,.csv" disabled={uploading} />
+                    <input type="file" id="file-upload" className="hidden" onChange={handleUpload} accept=".pdf,.txt,.md,.csv" disabled={uploading} multiple />
                     <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-4">
                         <div className="p-4 bg-slate-900 rounded-full text-slate-400 group-hover:text-cyan-400 transition-colors">
                             {uploading ? <Loader2 size={32} className="animate-spin" /> : <Upload size={32} />}
@@ -194,7 +213,7 @@ function DatasetsView() {
         if (!datasetName) return;
         setStatus("loading");
         try {
-            const res = await fetch("/api/admin/ingest", {
+            const res = await fetch(getApiUrl("/api/admin/ingest"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -243,7 +262,7 @@ function ScraperView() {
         if (!url) return;
         setStatus("loading");
         try {
-            const res = await fetch("/api/admin/scrape", {
+            const res = await fetch(getApiUrl("/api/admin/scrape"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -283,32 +302,83 @@ function ScraperView() {
 
 // --- INGEST HISTORY (Audit Logs) ---
 function IngestHistory() {
+    // Implementing properly inside the component render for brevity
+    return <HistoryTable />;
+}
+
+function HistoryTable() {
     const [logs, setLogs] = useState<IngestLog[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [cursors, setCursors] = useState<any[]>([null]); // Page 0 (1st page) starts with null
+    const [currentPage, setCurrentPage] = useState(0);
 
     useEffect(() => {
-        KnowledgeService.getIngestLogs().then(setLogs);
+        loadPage(0);
     }, []);
 
+    const loadPage = async (pageIndex: number) => {
+        setLoading(true);
+        try {
+            const cursor = cursors[pageIndex];
+            const result = await KnowledgeService.getIngestLogs(cursor, 15);
+            setLogs(result.logs);
+
+            // Should we update the NEXT page's cursor?
+            if (result.lastDoc) {
+                setCursors(prev => {
+                    const newCursors = [...prev];
+                    newCursors[pageIndex + 1] = result.lastDoc;
+                    return newCursors;
+                });
+            }
+            setCurrentPage(pageIndex);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
-        <div className="mt-12 border-t border-white/10 pt-8">
-            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Activity size={18} className="text-slate-400" />
-                Ingestion History
-            </h2>
-            <div className="bg-black/40 border border-white/10 rounded-xl overflow-hidden">
+        <div className="bg-black/40 border border-white/10 rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Activity size={16} className="text-amber-500" />
+                    Audit Logs
+                </h2>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => loadPage(currentPage - 1)}
+                        disabled={currentPage === 0 || loading}
+                        className="px-3 py-1 rounded bg-white/5 text-xs hover:bg-white/10 disabled:opacity-30"
+                    >
+                        Previous
+                    </button>
+                    <span className="text-xs font-mono py-1 text-slate-500">Page {currentPage + 1}</span>
+                    <button
+                        onClick={() => loadPage(currentPage + 1)}
+                        disabled={!cursors[currentPage + 1] || logs.length < 15 || loading} // Simple check
+                        className="px-3 py-1 rounded bg-white/5 text-xs hover:bg-white/10 disabled:opacity-30"
+                    >
+                        Next
+                    </button>
+                </div>
+            </div>
+
+            {loading ? (
+                <div className="p-12 flex justify-center"><Loader2 className="animate-spin text-slate-500" /></div>
+            ) : (
                 <table className="w-full text-left text-sm text-slate-400">
                     <thead className="bg-white/5 text-slate-300 font-mono text-xs uppercase">
                         <tr>
                             <th className="p-4">Source</th>
-                            <th className="p-4">Dataset / URL</th>
-                            <th className="p-4">Items</th>
-                            <th className="p-4">Status</th>
+                            <th className="p-4">Target</th>
+                            <th className="p-4 text-center">Items</th>
+                            <th className="p-4 text-center">Status</th>
                             <th className="p-4 text-right">Time</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
                         {logs.map((log) => (
-                            <tr key={log.id} className="hover:bg-white/5 transition">
+                            <tr key={log.id} className="hover:bg-white/5 transition group">
                                 <td className="p-4">
                                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${log.source === 'Hugging Face' ? 'bg-purple-900/30 text-purple-400' :
                                         log.source === 'Web Scraper' ? 'bg-emerald-900/30 text-emerald-400' :
@@ -317,28 +387,32 @@ function IngestHistory() {
                                         {log.source || 'Unknown'}
                                     </span>
                                 </td>
-                                <td className="p-4 font-mono text-white">{log.dataset}</td>
-                                <td className="p-4">{log.count}</td>
-                                <td className="p-4">
+                                <td className="p-4 font-mono text-white text-xs truncate max-w-[200px]" title={log.dataset}>
+                                    {log.dataset}
+                                </td>
+                                <td className="p-4 text-center">{log.count}</td>
+                                <td className="p-4 text-center">
                                     {log.status === 'success' ? (
-                                        <span className="text-green-400 flex items-center gap-1"><Check size={12} /> Success</span>
+                                        <div className="inline-flex items-center gap-1.5 bg-green-900/20 text-green-400 px-2 py-1 rounded-full text-[10px] font-bold">
+                                            <Check size={10} strokeWidth={3} /> SUCCESS
+                                        </div>
                                     ) : (
-                                        <span className="text-red-400">Failed</span>
+                                        <span className="text-red-400 text-[10px]">FAILED</span>
                                     )}
                                 </td>
-                                <td className="p-4 text-right font-mono text-xs">
+                                <td className="p-4 text-right font-mono text-xs text-slate-500 group-hover:text-white transition-colors">
                                     {log.timestamp?.seconds ? new Date(log.timestamp.seconds * 1000).toLocaleString() : 'Just now'}
                                 </td>
                             </tr>
                         ))}
                         {logs.length === 0 && (
                             <tr>
-                                <td colSpan={5} className="p-8 text-center text-slate-500 italic">No ingestion history found.</td>
+                                <td colSpan={5} className="p-8 text-center text-slate-500 italic">No logs found for this period.</td>
                             </tr>
                         )}
                     </tbody>
                 </table>
-            </div>
+            )}
         </div>
     );
 }

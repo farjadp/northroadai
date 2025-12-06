@@ -35,6 +35,7 @@ import { HistoryService, ChatSession } from "@/lib/api/history";
 import { ChatSidebar } from "@/components/chat/chat-sidebar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MessageBubble } from "@/components/chat/message-bubble";
+import { getApiUrl } from "@/lib/api-config";
 
 
 // --- CONSTANTS ---
@@ -193,7 +194,7 @@ function PiraChatContent() {
 
     setIsLoading(true);
     try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch(getApiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -293,7 +294,7 @@ function PiraChatContent() {
     // alert("Connecting to Stripe..."); 
 
     try {
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetch(getApiUrl("/api/stripe/checkout"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -329,7 +330,7 @@ function PiraChatContent() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const res = await fetch(getApiUrl("/api/upload"), { method: "POST", body: formData });
       if (!res.ok) throw new Error("Upload failed");
       const data = await res.json();
       if (data.fileUri) {
@@ -376,7 +377,7 @@ function PiraChatContent() {
 
       await HistoryService.addMessageToSession(user.uid, activeSessionId, "user", userMsg.content, fileToSend ? [fileToSend] : []);
 
-      const res = await fetch("/api/chat", {
+      const res = await fetch(getApiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -571,7 +572,7 @@ function PiraChatContent() {
                     sources={msg.sources}
                     confidenceScore={msg.confidenceScore}
                     onFeedback={async (id, rating) => {
-                      await fetch("/api/chat/feedback", {
+                      await fetch(getApiUrl("/api/chat/feedback"), {
                         method: "POST",
                         body: JSON.stringify({
                           messageId: id,

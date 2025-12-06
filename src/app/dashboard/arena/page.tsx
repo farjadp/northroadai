@@ -9,7 +9,7 @@
 // 3. Keeps the previous styling/behavior inside `client.tsx`.
 // ============================================================================
 
-"use server";
+
 import { Suspense } from "react";
 import ArenaClient from "./client";
 

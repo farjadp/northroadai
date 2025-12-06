@@ -28,7 +28,7 @@ import {
     Loader2
 } from "lucide-react";
 import { mentorProfileUpdateSchema, MentorProfileUpdate, PortfolioEntry } from "@/lib/schemas/mentor-schema";
-import { updateMentorProfile, uploadMentorAvatar, getMentorProfile } from "@/app/actions/mentor-profile-actions";
+import { updateMentorProfileApi, uploadMentorAvatarApi, fetchMentorProfile } from "@/lib/api-services";
 import { auth } from "@/lib/firebase";
 
 type TabId = "identity" | "expertise" | "portfolio" | "settings";
@@ -73,7 +73,7 @@ export default function MentorProfileEdit() {
             if (!auth.currentUser) return;
 
             setLoading(true);
-            const result = await getMentorProfile(auth.currentUser.uid);
+            const result = await fetchMentorProfile(auth.currentUser.uid);
 
             if (result.success && result.profile) {
                 const profile = result.profile;
@@ -107,7 +107,7 @@ export default function MentorProfileEdit() {
         const formData = new FormData();
         formData.append("avatar", file);
 
-        const result = await uploadMentorAvatar(auth.currentUser.uid, formData);
+        const result = await uploadMentorAvatarApi(auth.currentUser.uid, formData);
         setUploadingAvatar(false);
 
         if (result.success && result.avatarUrl) {
@@ -121,7 +121,7 @@ export default function MentorProfileEdit() {
     const onSubmit = async (data: MentorProfileUpdate) => {
         setSaving(true);
 
-        const result = await updateMentorProfile(data);
+        const result = await updateMentorProfileApi(data);
 
         if (result.success) {
             if (result.profileStrength !== undefined) {
@@ -215,8 +215,8 @@ export default function MentorProfileEdit() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-2 px-6 py-3 font-mono text-sm transition-all relative ${activeTab === tab.id
-                                        ? "text-cyan-400 border-b-2 border-cyan-400"
-                                        : "text-slate-500 hover:text-slate-300"
+                                    ? "text-cyan-400 border-b-2 border-cyan-400"
+                                    : "text-slate-500 hover:text-slate-300"
                                     }`}
                             >
                                 <Icon size={16} />
@@ -321,8 +321,8 @@ export default function MentorProfileEdit() {
                                                     type="button"
                                                     onClick={() => toggleIndustry(industry)}
                                                     className={`px-3 py-1 rounded-full text-xs font-mono border transition-all ${selectedIndustries.includes(industry)
-                                                            ? "bg-cyan-950/30 border-cyan-500 text-cyan-400"
-                                                            : "bg-zinc-900 border-white/10 text-slate-400 hover:border-cyan-500/50"
+                                                        ? "bg-cyan-950/30 border-cyan-500 text-cyan-400"
+                                                        : "bg-zinc-900 border-white/10 text-slate-400 hover:border-cyan-500/50"
                                                         }`}
                                                 >
                                                     {industry}
@@ -340,8 +340,8 @@ export default function MentorProfileEdit() {
                                                     type="button"
                                                     onClick={() => toggleSkill(skill)}
                                                     className={`px-3 py-1 rounded-full text-xs font-mono border transition-all ${selectedSkills.includes(skill)
-                                                            ? "bg-purple-950/30 border-purple-500 text-purple-400"
-                                                            : "bg-zinc-900 border-white/10 text-slate-400 hover:border-purple-500/50"
+                                                        ? "bg-purple-950/30 border-purple-500 text-purple-400"
+                                                        : "bg-zinc-900 border-white/10 text-slate-400 hover:border-purple-500/50"
                                                         }`}
                                                 >
                                                     {skill}

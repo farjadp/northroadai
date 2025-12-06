@@ -13,6 +13,7 @@ import React, { useEffect, useState } from "react";
 import { KnowledgeService, KnowledgeDoc } from "@/lib/api/knowledge";
 import { useAuth } from "@/context/auth-context";
 import { Upload, Trash2, FileText, Shield, Loader2, Lock } from "lucide-react";
+import { getApiUrl } from "@/lib/api-config";
 
 export default function UserDocumentsPage() {
     const { user } = useAuth();
@@ -49,7 +50,7 @@ export default function UserDocumentsPage() {
             formData.append("file", file);
 
             // 1. Upload to Google AI
-            const res = await fetch("/api/upload", {
+            const res = await fetch(getApiUrl("/api/upload"), {
                 method: "POST",
                 body: formData,
             });

@@ -33,6 +33,7 @@ import {
   GitCommit
 } from "lucide-react";
 import { APP_VERSION } from "@/lib/constants";
+import { MobileNav } from "@/components/shared/mobile-nav";
 
 // --- SPOTLIGHT WRAPPER ---
 function DashboardSpotlight({ children }: { children: React.ReactNode }) {
@@ -94,7 +95,7 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
   return (
     <DashboardSpotlight>
       {/* --- SIDEBAR --- */}
-      <aside className="w-20 md:w-64 border-r border-white/5 bg-black/40 backdrop-blur-xl flex flex-col justify-between p-4 md:p-6 transition-all duration-300">
+      <aside className="hidden md:flex w-20 md:w-64 border-r border-white/5 bg-black/40 backdrop-blur-xl flex-col justify-between p-4 md:p-6 transition-all duration-300">
         <div>
           {/* Logo Area */}
           <div className="flex items-center gap-3 mb-10 md:px-2 justify-center md:justify-start">
@@ -175,6 +176,7 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
           {children}
         </div>
       </main>
+      <MobileNav />
     </DashboardSpotlight>
   );
 }

@@ -23,4 +23,26 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+}
+
+/* Mobile Optimizations */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.safe-padding-top {
+  padding-top: var(--sat);
+}
+
+.safe-padding-bottom {
+  padding-bottom: var(--sab);
 }

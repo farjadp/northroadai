@@ -19,7 +19,8 @@ import {
     query,
     orderBy,
     limit,
-    Timestamp
+    Timestamp,
+    startAfter
 } from "firebase/firestore";
 
 // --- TYPES ---
@@ -108,22 +109,29 @@ export const KnowledgeService = {
     // 3. AUDIT LOGS (Ingestion History)
     // ==========================================
     // این تابع قبلا بیرون آبجکت بود و ارور میداد، الان درست شد:
-    async getIngestLogs(): Promise<IngestLog[]> {
-        if (!db) return [];
+    async getIngestLogs(lastDoc: any = null, pageSize: number = 10): Promise<{ logs: IngestLog[], lastDoc: any }> {
+        if (!db) return { logs: [], lastDoc: null };
         try {
-            const q = query(
+            let q = query(
                 collection(db, "ingest_logs"),
                 orderBy("timestamp", "desc"),
-                limit(20) // گرفتن ۲۰ تای آخر
+                limit(pageSize)
             );
+
+            if (lastDoc) {
+                q = query(q, startAfter(lastDoc));
+            }
+
             const snapshot = await getDocs(q);
-            return snapshot.docs.map(doc => ({
+            const logs = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             })) as IngestLog[];
+
+            return { logs, lastDoc: snapshot.docs[snapshot.docs.length - 1] || null };
         } catch (e) {
             console.error("Error fetching logs:", e);
-            return [];
+            return { logs: [], lastDoc: null };
         }
     }
 };

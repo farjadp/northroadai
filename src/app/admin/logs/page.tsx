@@ -15,6 +15,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { JSX } from "react";
 import { ShieldAlert, Bell, Activity, Users, Filter, Clock, Server, CheckCircle2, AlertTriangle, Flame, Cpu, Database } from "lucide-react";
 import BrainStats from "@/components/BrainStats";
+import { getApiUrl } from "@/lib/api-config";
 
 type LogEntry = {
   id: string;
@@ -47,7 +48,7 @@ export default function AdminLogsPage() {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const res = await fetch("/api/admin/logs");
+        const res = await fetch(getApiUrl("/api/admin/logs"));
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to load logs");
         setLogs(data.logs || []);

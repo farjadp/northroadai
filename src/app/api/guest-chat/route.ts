@@ -13,11 +13,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, query, where, getDocs, doc, getDoc, Timestamp } from "firebase/firestore";
-import { headers } from "next/headers";
 import { logServiceStatus, logSystemAlert } from "@/lib/system-status";
-
-// ⚠️ این خط برای دپلوی روی Cloud Run حیاتی است
-export const dynamic = 'force-dynamic';
 
 const createGenAI = () => {
   const key = process.env.GEMINI_API_KEY;
@@ -30,9 +26,8 @@ const createGenAI = () => {
 export async function POST(req: Request) {
   try {
     const { message } = await req.json();
-    const headersList = await headers();
-    const ip = headersList.get("x-forwarded-for") || "unknown";
-    const userAgent = headersList.get("user-agent") || "unknown";
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const userAgent = req.headers.get("user-agent") || "unknown";
     const fingerprint = `${ip}-${userAgent}`;
 
     // چک کردن db قبل از استفاده (برای اطمینان در زمان بیلد)
@@ -66,7 +61,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Smart Model Selection
-    let targetModel = "gemini-1.5-flash"; 
+    let targetModel = "gemini-pro"; 
     try {
         // تلاش برای پیدا کردن بهترین مدل (برای جلوگیری از 404)
         const listReq = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);

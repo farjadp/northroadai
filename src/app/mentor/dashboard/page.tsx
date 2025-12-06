@@ -21,7 +21,7 @@ import {
     Activity,
     Terminal
 } from "lucide-react";
-import { logImpactSession } from "@/app/actions/mentor-actions";
+// import { logImpactSession } from "@/app/actions/mentor-actions";
 import { auth } from "@/lib/firebase";
 
 // Mock data for founders (In real app, fetch from API/Firestore)
@@ -61,6 +61,8 @@ export default function MentorDashboard() {
 
     const handleImpactSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        alert("Impact logging unavailable in offline mode.");
+        /*
         if (!selectedFounder || !auth.currentUser) return;
 
         setSubmitting(true);
@@ -90,6 +92,7 @@ export default function MentorDashboard() {
         } finally {
             setSubmitting(false);
         }
+        */
     };
 
     return (
@@ -123,8 +126,8 @@ export default function MentorDashboard() {
                             key={founder.id}
                             onClick={() => setSelectedFounder(founder.id)}
                             className={`w-full text-left p-4 rounded-xl border transition-all group ${selectedFounder === founder.id
-                                    ? "bg-amber-950/20 border-amber-500/50"
-                                    : "bg-[#0a0a0a] border-white/10 hover:border-amber-500/30"
+                                ? "bg-amber-950/20 border-amber-500/50"
+                                : "bg-[#0a0a0a] border-white/10 hover:border-amber-500/30"
                                 }`}
                         >
                             <div className="flex justify-between items-start mb-2">

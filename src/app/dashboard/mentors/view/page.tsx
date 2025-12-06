@@ -15,8 +15,9 @@
 // ============================================================================
 
 "use client";
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     ArrowLeft,
@@ -94,8 +95,8 @@ function BookingModal({
                                     key={slot}
                                     onClick={() => setSelectedSlot(slot)}
                                     className={`px-4 py-3 text-sm rounded-lg border transition-all text-left ${selectedSlot === slot
-                                            ? "bg-cyan-900/20 border-cyan-500 text-cyan-400"
-                                            : "bg-black border-white/10 text-slate-400 hover:border-white/30"
+                                        ? "bg-cyan-900/20 border-cyan-500 text-cyan-400"
+                                        : "bg-black border-white/10 text-slate-400 hover:border-white/30"
                                         }`}
                                 >
                                     {slot}
@@ -106,8 +107,8 @@ function BookingModal({
 
                     {/* 2. THE DATA PERMISSION TOGGLE */}
                     <div className={`p-4 rounded-xl border transition-all duration-300 ${shareData
-                            ? "bg-green-900/10 border-green-500/30"
-                            : "bg-red-900/10 border-red-500/30"
+                        ? "bg-green-900/10 border-green-500/30"
+                        : "bg-red-900/10 border-red-500/30"
                         }`}>
                         <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center gap-2">
@@ -168,11 +169,12 @@ function BookingModal({
     );
 }
 
-export default function MentorProfile() {
+function MentorProfileContent() {
     const [isBookingOpen, setIsBookingOpen] = useState(false);
     const [shareData, setShareData] = useState(false); // THE CORE LOGIC
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-
+    const searchParams = useSearchParams();
+    // const id = searchParams.get("id");
 
     // --- MAIN PAGE RENDER ---
     return (
@@ -191,7 +193,7 @@ export default function MentorProfile() {
 
             {/* Back Nav */}
             <Link href="/dashboard/mentors" className="inline-flex items-center gap-2 text-slate-500 hover:text-white transition mb-8 group">
-                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Grid
+                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Grid (Params moved to query)
             </Link>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -306,5 +308,13 @@ export default function MentorProfile() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function MentorProfile() {
+    return (
+        <Suspense fallback={<div className="text-center text-white p-20">Loading Mentor Data...</div>}>
+            <MentorProfileContent />
+        </Suspense>
     );
 }

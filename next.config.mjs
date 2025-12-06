@@ -1,22 +1,26 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
+  // ⚡ ENABLE 'export' ONLY for Mobile Builds (Capacitor)
+  // For Web/Dev (Cloud Run), we need standard server mode for API Routes.
+  output: process.env.MOBILE_BUILD === 'true' ? 'export' : undefined,
+
   typescript: {
     ignoreBuildErrors: true,
   },
   images: {
+    unoptimized: true, // Always true for Capacitor, harmless for web
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'lh3.googleusercontent.com', // عکس پروفایل گوگل
+        hostname: 'lh3.googleusercontent.com',
       },
       {
         protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com', // عکس‌های آپلود شده
+        hostname: 'firebasestorage.googleapis.com',
       },
       {
         protocol: 'https',
-        hostname: 'graph.facebook.com', // اگر فیسبوک دارید
+        hostname: 'graph.facebook.com',
       },
     ],
   },

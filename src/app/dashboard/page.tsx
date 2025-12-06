@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import BrainStats from "@/components/BrainStats";
+import KnowledgeIntel from "@/components/dashboard/KnowledgeIntel";
 
 import {
   Compass,
@@ -28,6 +29,7 @@ import {
   Clock,
   CheckCircle2,
   Loader2,
+  Activity,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { getStartupDNA, StartupProfile } from "@/lib/api/startup";
@@ -98,10 +100,10 @@ export default function MissionControl() {
   const formatRelativeTime = (date: any) => {
     // 🛡️ Safety Check: If date is missing, don't crash
     if (!date) return "Just now";
-    
+
     // Handle Firestore Timestamp or Date object
     const d = date?.toDate ? date.toDate() : new Date(date);
-    
+
     // Invalid Date Check
     if (isNaN(d.getTime())) return "Just now";
 
@@ -152,7 +154,7 @@ export default function MissionControl() {
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
-      
+
       {/* --- SECTION 1: HEADER --- */}
       <motion.section variants={cardVariants} className="relative">
         <div className="flex flex-col md:flex-row justify-between items-end mb-6">
@@ -213,113 +215,17 @@ export default function MissionControl() {
               </Link>
             </div>
           </div>
-
-          {/* DNA Stats Card */}
-          <div className="bg-black/40 border border-white/10 rounded-2xl p-5">
-            <h4 className="text-white font-semibold mb-3">Profile Readiness</h4>
-            {dnaLoading ? (
-              <div className="space-y-2">
-                <div className="h-3 w-full bg-white/10 rounded animate-pulse"></div>
-                <div className="h-3 w-3/4 bg-white/10 rounded animate-pulse"></div>
-                <div className="h-8 w-32 bg-white/10 rounded animate-pulse mt-2"></div>
-              </div>
-            ) : (
-              renderDNAProgress()
-            )}
-          </div>
         </div>
       </motion.section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* --- SECTION 2: ACTIVE OPERATIONS --- */}
-        <motion.div variants={cardVariants} className="lg:col-span-2 space-y-6">
-          <div className="flex items-center gap-2 text-sm font-mono text-slate-500 uppercase tracking-widest">
-            <Target size={16} className="text-purple-500" /> Active Operations
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {sessionsLoading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="p-4 rounded-xl border border-white/10 bg-white/5 animate-pulse h-32" />
-              ))
-            ) : sessions.length === 0 ? (
-              <div className="col-span-3 p-5 bg-black/40 border border-white/10 rounded-xl text-slate-500 font-mono text-sm">
-                No active operations. Start a new session to begin.
-              </div>
-            ) : (
-              sessions.map((session) => {
-                const agent = getAgentById(session.agentId);
-                // 🟢 FIXED: Capitalized for React Component
-                const AgentIcon = agent?.icon || Compass;
-
-                return (
-                  <Link key={session.id} href={`/dashboard/chat?session=${session.id}`}>
-                    <div className="p-5 rounded-xl border border-white/10 bg-black/40 hover:border-cyan-500/30 hover:bg-white/5 transition-all cursor-pointer space-y-2 group">
-                      <div className="flex items-center gap-2 text-sm text-slate-400">
-                        <div className={`${agent?.colorClass || "text-slate-500"} group-hover:scale-110 transition-transform`}>
-                            <AgentIcon size={18} />
-                        </div>
-                        <span className="font-mono uppercase text-xs text-slate-500">{agent?.name || "Navigator"}</span>
-                        <span className="ml-auto text-[10px] text-slate-600">{formatRelativeTime(session.updatedAt)}</span>
-                      </div>
-                      <h4 className="text-white font-semibold text-sm leading-tight line-clamp-1">
-                        {session.title || session.preview || "New Chat"}
-                      </h4>
-                      <p className="text-slate-500 text-xs line-clamp-2">{session.preview || "Conversation in progress..."}</p>
-                    </div>
-                  </Link>
-                );
-              })
-            )}
-          </div>
-        </motion.div>
-
-        {/* --- SECTION 3: SIGNAL FEED --- */}
-        <motion.div variants={cardVariants} className="space-y-6">
-          <div className="flex items-center gap-2 text-sm font-mono text-slate-500 uppercase tracking-widest">
-            <TrendingUp size={16} className="text-green-500" /> Signal Feed
-          </div>
-
-          <div className="bg-zinc-900/20 border border-white/10 rounded-xl overflow-hidden">
-            <div className="divide-y divide-white/5">
-              <SignalItem
-                icon={<AlertCircle size={16} className="text-yellow-500 mt-1 shrink-0" />}
-                title="Market Alert"
-                body='2 new competitors detected in "EdTech/AI" sector in Canada.'
-                time="2 HOURS AGO"
-              />
-              <SignalItem
-                icon={<Compass size={16} className="text-cyan-500 mt-1 shrink-0" />}
-                title="Opportunity"
-                body="NRC IRAP grant applications are opening next week."
-                time="YESTERDAY"
-              />
-              <SignalItem
-                icon={<MessageSquare size={16} className="text-purple-500 mt-1 shrink-0" />}
-                title="Community"
-                body='Founder #402 replied to your question about "Incorporation".'
-                time="2 DAYS AGO"
-              />
-            </div>
-            <div className="p-2 bg-white/5 border-t border-white/5">
-              <button className="w-full py-2 text-xs text-slate-500 hover:text-white transition font-mono uppercase hover:bg-white/5 rounded">
-                View All Signals
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* --- SECTION 4: QUICK DEPLOY --- */}
+      {/* --- SECTION 2: QUICK DEPLOY (ACTION DECK) --- */}
       <motion.section variants={cardVariants} className="space-y-4">
         <div className="flex items-center gap-2 text-sm font-mono text-slate-500 uppercase tracking-widest">
-          <CheckCircle2 size={16} className="text-cyan-500" /> Quick Deploy
+          <Zap size={16} className="text-yellow-500" /> Quick Deploy
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {QUICK_DEPLOY.map((id) => {
             const agent = getAgentById(id);
-            // 🟢 FIXED: Capitalized for React Component
             const AgentIcon = agent?.icon || Compass;
 
             return (
@@ -327,27 +233,30 @@ export default function MissionControl() {
                 key={id}
                 onClick={() => handleStartSession(id)}
                 disabled={creatingAgent === id || !user}
-                className={`p-5 rounded-xl border border-white/10 bg-black/40 hover:border-cyan-500/30 hover:bg-white/5 transition-all text-left space-y-2 group ${
-                  creatingAgent === id ? "opacity-70 cursor-wait" : "cursor-pointer"
-                }`}
+                className={`p-5 rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent hover:border-cyan-500/30 hover:bg-white/10 transition-all text-left space-y-3 group relative overflow-hidden ${creatingAgent === id ? "opacity-70 cursor-wait" : "cursor-pointer"
+                  }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg bg-white/5 ${agent?.colorClass} group-hover:bg-white/10 transition-colors`}>
-                      <AgentIcon size={24} />
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/5 to-cyan-500/0 opacity-0 group-hover:opacity-100 transition-opacity bg-[length:200%_100%] animate-shimmer" />
+
+                <div className="flex items-center gap-3 relative z-10">
+                  <div className={`p-2 rounded-lg bg-white/5 ${agent?.colorClass} group-hover:bg-white/10 transition-colors shadow-lg`}>
+                    <AgentIcon size={24} />
                   </div>
                   <div>
-                    <h4 className="text-white font-semibold">{agent?.name || "Navigator"}</h4>
-                    <p className="text-xs text-slate-500 line-clamp-1">{agent?.description}</p>
+                    <h4 className="text-white font-bold tracking-tight">{agent?.name || "Navigator"}</h4>
+                    <p className="text-[10px] text-slate-500 font-mono uppercase">{agent?.role}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-500 pl-1">
+                <p className="text-xs text-slate-400 line-clamp-2 min-h-[2.5em] relative z-10">{agent?.description}</p>
+
+                <div className="flex items-center gap-2 text-[10px] text-cyan-500/80 font-mono pt-2 border-t border-white/5 relative z-10">
                   {creatingAgent === id ? (
                     <>
-                      <Loader2 className="w-3 h-3 animate-spin" /> Creating session...
+                      <Loader2 className="w-3 h-3 animate-spin" /> INITIALIZING...
                     </>
                   ) : (
                     <>
-                      <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform"/> Start new session
+                      <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" /> INITIALIZE
                     </>
                   )}
                 </div>
@@ -357,10 +266,120 @@ export default function MissionControl() {
         </div>
       </motion.section>
 
-      {/* --- SECTION 5: NEURAL ENGINE STATUS --- */}
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-white mb-4">Neural Engine Status</h2>
-        <BrainStats variant="full" />
+      {/* --- SECTION 3: OPERATIONAL GRID --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {/* LEFT COL: ACTIVE OPERATIONS */}
+        <motion.div variants={cardVariants} className="lg:col-span-2 space-y-6">
+          <div className="flex items-center gap-2 text-sm font-mono text-slate-500 uppercase tracking-widest">
+            <Target size={16} className="text-purple-500" /> Active Operations
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {sessionsLoading ? (
+              Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="p-4 rounded-xl border border-white/10 bg-white/5 animate-pulse h-32" />
+              ))
+            ) : sessions.length === 0 ? (
+              <div className="col-span-2 p-8 bg-black/40 border border-white/10 rounded-xl text-center">
+                <div className="inline-flex p-3 rounded-full bg-white/5 text-slate-500 mb-3"><Compass size={24} /></div>
+                <p className="text-slate-400 font-medium">No active operations.</p>
+                <p className="text-sm text-slate-600">Select an agent above to start a session.</p>
+              </div>
+            ) : (
+              sessions.map((session) => {
+                const agent = getAgentById(session.agentId);
+                const AgentIcon = agent?.icon || Compass;
+
+                return (
+                  <Link key={session.id} href={`/dashboard/chat?session=${session.id}`}>
+                    <div className="p-5 rounded-xl border border-white/10 bg-black/40 hover:border-cyan-500/30 hover:bg-white/5 transition-all cursor-pointer space-y-3 group h-full">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                          <div className={`${agent?.colorClass || "text-slate-500"} group-hover:scale-110 transition-transform`}>
+                            <AgentIcon size={16} />
+                          </div>
+                          <span className="font-mono uppercase text-[10px] text-slate-500">{agent?.name}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-600 font-mono bg-white/5 px-1.5 py-0.5 rounded">{formatRelativeTime(session.updatedAt)}</span>
+                      </div>
+
+                      <div>
+                        <h4 className="text-white font-semibold text-sm leading-tight line-clamp-1 mb-1 group-hover:text-cyan-400 transition-colors">
+                          {session.title || session.preview || "New Chat"}
+                        </h4>
+                        <p className="text-slate-500 text-xs line-clamp-2">{session.preview || "Conversation in progress..."}</p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            )}
+
+            {/* View All Button */}
+            {sessions.length > 0 && (
+              <Link href="/dashboard/chat" className="col-span-full md:col-start-2">
+                <button className="w-full h-full min-h-[60px] flex items-center justify-center gap-2 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 text-xs font-mono text-slate-400 hover:text-white transition-all group">
+                  VIEW ALL SESSIONS <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+              </Link>
+            )}
+          </div>
+        </motion.div>
+
+        {/* RIGHT COL: CONTEXT STACK */}
+        <motion.div variants={cardVariants} className="space-y-8">
+          {/* DNA STATS */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-mono text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <Activity size={14} className="text-green-500" /> Start-up DNA
+            </h4>
+            <div className="bg-black/40 border border-white/10 rounded-2xl p-5 hover:border-white/20 transition-colors">
+              {dnaLoading ? (
+                <div className="space-y-2">
+                  <div className="h-3 w-full bg-white/10 rounded animate-pulse"></div>
+                  <div className="h-8 w-32 bg-white/10 rounded animate-pulse mt-2"></div>
+                </div>
+              ) : (
+                renderDNAProgress()
+              )}
+            </div>
+          </div>
+
+          {/* SIGNAL FEED */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-mono text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <TrendingUp size={14} className="text-blue-500" /> Signal Feed
+            </h4>
+            <div className="bg-zinc-900/20 border border-white/10 rounded-xl overflow-hidden backdrop-blur-sm">
+              <div className="divide-y divide-white/5">
+                <SignalItem
+                  icon={<AlertCircle size={14} className="text-yellow-500 mt-0.5 shrink-0" />}
+                  title="Market Alert"
+                  body='2 new competitors detected in "EdTech".'
+                  time="2H AGO"
+                />
+                <SignalItem
+                  icon={<Compass size={14} className="text-cyan-500 mt-0.5 shrink-0" />}
+                  title="Opp"
+                  body="NRC IRAP grant applications opening."
+                  time="1D AGO"
+                />
+                <SignalItem
+                  icon={<MessageSquare size={14} className="text-purple-500 mt-0.5 shrink-0" />}
+                  title="Community"
+                  body='Founder #402 replied to your post.'
+                  time="2D AGO"
+                />
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* --- SECTION 4: KNOWLEDGE INTEL --- */}
+      <div className="pt-4 border-t border-white/5">
+        <KnowledgeIntel />
       </div>
 
     </motion.div>

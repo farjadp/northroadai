@@ -28,7 +28,7 @@ import {
     Loader2
 } from "lucide-react";
 import { mentorProfileUpdateSchema, MentorProfileUpdate, PortfolioEntry } from "@/lib/schemas/mentor-schema";
-import { updateMentorProfile, uploadMentorAvatar, getMentorProfile } from "@/app/actions/mentor-profile-actions";
+import { updateMentorProfileApi, uploadMentorAvatarApi, fetchMentorProfile } from "@/lib/api-services";
 import { auth } from "@/lib/firebase";
 
 type TabId = "identity" | "expertise" | "portfolio" | "settings";
@@ -73,7 +73,7 @@ export default function MentorProfileEdit() {
             if (!auth.currentUser) return;
 
             setLoading(true);
-            const result = await getMentorProfile(auth.currentUser.uid);
+            const result = await fetchMentorProfile(auth.currentUser.uid);
 
             if (result.success && result.profile) {
                 const profile = result.profile as any;
@@ -107,7 +107,7 @@ export default function MentorProfileEdit() {
         const formData = new FormData();
         formData.append("avatar", file);
 
-        const result = await uploadMentorAvatar(auth.currentUser.uid, formData);
+        const result = await uploadMentorAvatarApi(auth.currentUser.uid, formData);
         setUploadingAvatar(false);
 
         if (result.success && result.avatarUrl) {
@@ -121,7 +121,7 @@ export default function MentorProfileEdit() {
     const onSubmit = async (data: MentorProfileUpdate) => {
         setSaving(true);
 
-        const result = await updateMentorProfile(data);
+        const result = await updateMentorProfileApi(data);
 
         if (result.success) {
             if (result.profileStrength !== undefined) {

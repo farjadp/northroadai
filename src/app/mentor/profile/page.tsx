@@ -15,11 +15,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
-import {
-  getMentorProfileAction,
-  createMentorProfileAction,
-  updateMentorProfileAction,
-} from "./actions";
+import { getApiUrl } from "@/lib/api-config";
 import {
   MentorProfile,
   MentorProfileInput,
@@ -107,7 +103,7 @@ export default function MentorProfilePage() {
   );
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues,
     mode: "onBlur",
   });
@@ -126,8 +122,15 @@ export default function MentorProfilePage() {
     setError(null);
     try {
       const token = await user.getIdToken(true);
-      const data = await getMentorProfileAction({ token });
-      if (data) {
+      const res = await fetch(getApiUrl(`/api/mentor/profile?uid=${user.uid}`), {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const json = await res.json();
+
+      if (res.ok && json.success && json.profile) {
+        const data = json.profile;
         setProfile(data);
         reset({
           fullName: data.fullName || user?.displayName || "",
@@ -144,6 +147,7 @@ export default function MentorProfilePage() {
           bio: data.bio || "",
         });
       } else {
+        // If 404 or not found, go to create/edit mode
         setProfile(null);
         reset({
           ...defaultValues,
@@ -204,13 +208,19 @@ export default function MentorProfilePage() {
         badges: profile?.badges || [],
       };
 
-      if (profile) {
-        await updateMentorProfileAction({ token, profile: payload });
-        setStatus("Profile updated.");
-      } else {
-        await createMentorProfileAction({ token, profile: payload });
-        setStatus("Profile created.");
-      }
+      const method = profile ? "PUT" : "POST";
+      const res = await fetch(getApiUrl("/api/mentor/profile"), {
+        method,
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ profile: payload })
+      });
+
+      if (!res.ok) throw new Error("Failed to save profile");
+
+      setStatus(profile ? "Profile updated." : "Profile created.");
 
       await loadProfile();
       setEditing(false);
@@ -265,11 +275,10 @@ export default function MentorProfilePage() {
           <div className="flex items-center gap-3">
             <button
               onClick={toggleGhostMode}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold border transition ${
-                watch("visibility") === "public"
-                  ? "border-green-500/50 text-green-200 bg-green-500/10"
-                  : "border-slate-700 text-slate-300 bg-slate-900/60"
-              }`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold border transition ${watch("visibility") === "public"
+                ? "border-green-500/50 text-green-200 bg-green-500/10"
+                : "border-slate-700 text-slate-300 bg-slate-900/60"
+                }`}
             >
               {watch("visibility") === "public" ? <Eye size={16} /> : <EyeOff size={16} />}
               Ghost Mode
@@ -639,11 +648,10 @@ function MentorProfileView({ profile, onEdit }: { profile: MentorProfile; onEdit
               </span>
             )}
             <span
-              className={`px-2 py-1 rounded-full text-xs border ${
-                profile.visibility === "public"
-                  ? "bg-green-500/10 text-green-200 border-green-500/30"
-                  : "bg-slate-800 text-slate-300 border-slate-700"
-              }`}
+              className={`px-2 py-1 rounded-full text-xs border ${profile.visibility === "public"
+                ? "bg-green-500/10 text-green-200 border-green-500/30"
+                : "bg-slate-800 text-slate-300 border-slate-700"
+                }`}
             >
               {profile.visibility}
             </span>
@@ -692,13 +700,12 @@ function MentorProfileView({ profile, onEdit }: { profile: MentorProfile; onEdit
                 <div className="flex items-center justify-between">
                   <span className="text-white font-semibold">{item.startupName}</span>
                   <span
-                    className={`text-xs px-2 py-1 rounded-full border ${
-                      item.outcome === "Exited"
-                        ? "bg-green-500/10 text-green-200 border-green-500/30"
-                        : item.outcome === "Failed"
+                    className={`text-xs px-2 py-1 rounded-full border ${item.outcome === "Exited"
+                      ? "bg-green-500/10 text-green-200 border-green-500/30"
+                      : item.outcome === "Failed"
                         ? "bg-red-500/10 text-red-200 border-red-500/30"
                         : "bg-blue-500/10 text-blue-200 border-blue-500/30"
-                    }`}
+                      }`}
                   >
                     {item.outcome}
                   </span>
