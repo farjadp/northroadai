@@ -1,114 +1,156 @@
-# North Road AI
+# North Road AI 🚀
 
-Founder copilot built with Next.js, Firebase, and Gemini. This doc is meant for reviewers on GitHub to understand how the system works and how to run it locally.
+**North Road AI** is a next-generation "Founder Copilot" platform, built with **Next.js 16**, **Firebase**, and **Google Gemini**. It empowers startup founders with a multi-agent AI team (Navigator, Builder, Ledger, Counsel, Rainmaker) to accelerate their journey from idea to exit.
 
-## Tech Stack
-- Next.js 16 (App Router), React 19, TypeScript, Tailwind, Framer Motion.
-- Firebase Auth + Firestore.
-- Gemini via `@google/generative-ai` (v1 endpoints, model `models/gemini-pro` text-only).
+---
 
-## Environment
-Create `.env.local` with:
-- `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`
-- `GEMINI_API_KEY`
+## ✨ Key Features
 
-## Auth & Roles
-- Google Sign-In (`src/context/auth-context.tsx`).
-- Firestore `users/{uid}` stores `tier` (SCOUT/VANGUARD/COMMAND), `unlockedAgents`, `role` (`user`/`admin`).
-- Admin gate in `src/app/admin/layout.tsx`; set `role: "admin"` on your user doc to enter `/admin`.
+### 🤖 Multi-Agent AI System
+- **5 Specialized Agents**:
+  - **Navigator**: Strategy & Operations.
+  - **Builder**: Product & Engineering.
+  - **Ledger**: Finance & Accounting.
+  - **Counsel**: Legal & Compliance.
+  - **Rainmaker**: Sales & Marketing.
+- **RAG (Retrieval Augmented Generation)**: Intelligent context-aware responses using uploaded documents, web scraping, and Hugging Face datasets.
+- **Chat Persistence**: Save and resume chat sessions with full history.
 
-## Data Model (Firestore)
-- Users: `users/{uid}` → tier, unlockedAgents, role, timestamps.
-- Startup DNA: `startups/{uid}` → profile fields (name, oneLiner, burnRate, etc.).
-- Chat sessions: `users/{uid}/chat_sessions/{sessionId}` with subcollection `messages`.
-- Plans: `plans/{tier}` → price, description, features, includedAgents.
-- Guest chats: `guest_chats` (public landing chat logs).
-- Settings: `settings/chat` → `guestLimit`.
+### 🧠 Knowledge Base & Admin Control
+- **Global Knowledge**: Admin can upload PDFs, text files, or scrape websites to feed the AI's brain.
+- **Agent-Specific Access**: Assign documents to specific agents (e.g., Financial reports only visible to *Ledger*).
+- **Hugging Face Integration**: Ingest datasets directly from Hugging Face for specialized training context.
+- **Web Scraper**: Built-in tool to scrape and index external websites.
 
-## Agents (Multi-Agent Grid)
-- Defined in `src/lib/agents.ts` (Navigator, Builder, Ledger, Counsel, Rainmaker) with strict boundaries and upsell prompts.
-- Access control: SCOUT has Navigator + per-agent unlocks; VANGUARD/COMMAND all agents; plan includes `includedAgents` for flexibility.
+### 🛠️ Founder Tools
+- **Startup DNA**: Profile system to track burn rate, runway, stage, and key metrics.
+- **Mentorship Portal**: Dedicated dashboard for mentors to oversee and guide founder progress.
+- **Gamification**: "Founder Score" and leaderboards to incentivize progress.
 
-## APIs
-- Chat: `src/app/api/chat/route.ts`
-  - Input: `{ message, startupContext?, fileData?, agentId?, userId? }`
-  - Access: validates agent access via `UserService`.
-  - RAG: fetches global/user docs; currently sends doc URIs in text (no file upload with current key; `fileData` is ignored).
-  - Model: `models/gemini-1.5-flash-002` (v1), text-only. No GoogleAIFileManager used.
-- Guest Chat: `src/app/api/guest-chat/route.ts` (rate-limited by `settings/chat.guestLimit`, logs to `guest_chats`).
-- Admin Settings: `/api/admin/settings/chat` for guest limit.
+### ⚡ Technical Highlights
+- **Real-time**: Firebase Firestore for instant data sync.
+- **Server Actions**: Leveraging Next.js 16 server capabilities.
+- **Stripe Integration**: Ready for subscription and credit-based monetization.
+- **Responsive Design**: Beautiful UI built with Tailwind CSS and Framer Motion.
 
-## UI Pages (Key)
-- Home + guest chat: `src/app/page.tsx`
-- Dashboard: `src/app/dashboard/page.tsx` (shows DNA readiness, recent sessions, quick deploy)
-- Chat: `src/app/dashboard/chat/page.tsx` (multi-agent sessions with persistence)
-- About/Protocol/Manifesto/Access: content pages using `TopNav`
-- Admin: `/admin` (users, packages/plans, guest chats, settings)
+---
 
-## Admin Tools
-- Users: edit tier and role at `/admin/users`
-- Packages/Plans: `/admin/packages` (price, features, includedAgents per tier)
-- Guest chats log: `/admin/guest-chats`
-- Chat settings: `/admin/settings/chat` (guest limit)
+## 🏗️ Tech Stack
 
-## Running Locally
+- **Framework**: [Next.js 16 (App Router)](https://nextjs.org/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Database & Auth**: [Firebase (Firestore, Auth)](https://firebase.google.com/)
+- **AI Model**: [Google Gemini Pro / Flash](https://ai.google.dev/)
+- **Payments**: [Stripe](https://stripe.com/)
+- **UI Components**: Lucide React, Framer Motion.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+ installed.
+- A Firebase project created.
+- A Google AI Studio API Key (for Gemini).
+
+### Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-username/north-road-ai.git
+   cd north-road-ai
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Environment Setup**:
+   Create a `.env.local` file in the root directory and add your keys:
+
+   ```env
+   # Firebase Config
+   NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
+
+   # Firebase Admin (Service Account for Server-Side)
+   FIREBASE_CLIENT_EMAIL=your_service_account_email
+   FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
+
+   # AI & Payments
+   GEMINI_API_KEY=your_gemini_api_key
+   STRIPE_SECRET_KEY=your_stripe_secret_key
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_public_key
+   STRIPE_WEBHOOK_SECRET=your_stripe_webhook
+   ```
+
+4. **Run Development Server**:
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) to see the app.
+
+---
+
+## 📂 Project Structure
+
+```bash
+src/
+├── app/
+│   ├── admin/          # Admin dashboard (Knowledge, Users, Logs)
+│   ├── api/            # Next.js API Routes
+│   ├── dashboard/      # Main User/Founder Dashboard
+│   ├── mentor/         # Mentor Portal
+│   ├── login/          # Authentication Pages
+│   └── page.tsx        # Landing Page
+├── components/         # Reusable UI Components
+├── lib/
+│   ├── agents.ts       # AI Agent Definitions & Prompts
+│   ├── api/            # API Service wrappers (Knowledge, Chat, etc.)
+│   └── firebase.ts     # Firebase Client Initialization
+└── context/            # React Context (Auth, Unstated)
 ```
-npm install
-npm run dev
-# open http://localhost:3000
-```
-Sign in via `/login`. To test admin, set your Firestore user doc role to `"admin"`.
 
-## Known Notes
-- Gemini usage is text-only; file uploads are not sent (URIs passed in prompt, `fileData` ignored). If you get 404/400, verify model access in Google AI Studio and switch to `models/gemini-1.5-pro` if needed.
-- Firestore rules should restrict writes (especially role/plan). Current code expects proper security rules in your Firebase project.
+---
 
-## Architecture Diagram (Mermaid)
-```mermaid
-flowchart LR
-    subgraph Client
-        UI[Next.js App Pages\n/dashboard, /admin, /login]
-        AuthCtx[Auth Context\nuser, tier, role, agents]
-    end
+## 🛡️ Access Control & Roles
 
-    subgraph Backend (Next API Routes)
-        ChatAPI[/api/chat\nMulti-Agent + RAG/]
-        GuestAPI[/api/guest-chat/]
-        AdminAPI[/api/admin/settings/chat/]
-    end
+- **User**: Standard role for founders. access to Dashboard and Chat.
+- **Admin**: Full access to `/admin` routes. Can manage users, ingest knowledge, and view system logs.
+  - *To promote a user to Admin*: Manually edit the user document in Firestore (`users/{uid}`) and set `role: "admin"`.
+- **Mentor**: Access to `/mentor` routes to view assigned founders.
 
-    subgraph Firebase
-        Auth[Firebase Auth\nGoogle Sign-In]
-        Firestore[Firestore\nusers, startups, chat_sessions,\nplans, guest_chats, settings]
-    end
+---
 
-    subgraph Gemini
-        Model[models/gemini-1.5-flash-002\n(v1)]
-    end
+## 📦 Deployment
 
-    UI -->|uses| AuthCtx
-    AuthCtx --> Auth
-    AuthCtx --> Firestore
-    UI --> ChatAPI
-    UI --> GuestAPI
-    UI --> AdminAPI
-    ChatAPI --> Firestore
-    ChatAPI --> Model
-    GuestAPI --> Firestore
-    GuestAPI --> Model
-    AdminAPI --> Firestore
+This project is optimized for deployment on **Vercel** or **Google Cloud Run**.
+
+### Build
+```bash
+npm run build
 ```
 
-## Deploy Details (Cloud Run + Buildpacks)
-- Ensure env vars are set in both build and runtime (Firebase + Gemini):
-  - `NEXT_PUBLIC_FIREBASE_API_KEY`
-  - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
-  - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-  - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
-  - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-  - `NEXT_PUBLIC_FIREBASE_APP_ID`
-  - `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`
-  - `GEMINI_API_KEY`
-- If using `gcloud run deploy`, pass env vars via `--set-env-vars` or set them in Cloud Run service UI (Variables & Secrets). Buildpacks also need these during build.
-- Build error `auth/invalid-api-key` means Firebase keys are missing or from the wrong project; fix envs before deploy.
-- Optional: silence the baseline-browser-mapping warning by `npm i baseline-browser-mapping@latest -D` before building.
+### Docker (Optional)
+A `Dockerfile` is likely needed for Cloud Run (ensure it uses `node:18-alpine` or similar).
+
+---
+
+## 🤝 Contributing
+
+1. Fork the project.
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
+
+---
+
+**Built with ❤️ for Builders.**
