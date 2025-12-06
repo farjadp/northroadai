@@ -24,33 +24,35 @@ import {
 
 // --- TYPES ---
 export interface KnowledgeDoc {
-  id?: string;
-  name: string;
-  mimeType: string;
-  fileUri: string;
-  createdAt?: any; 
+    id?: string;
+    name: string;
+    mimeType: string;
+    fileUri: string;
+    targetAgents?: string[]; // 🔥 Added Access Control
+    createdAt?: any;
 }
 
 export interface IngestLog {
-  id: string;
-  dataset: string;
-  count: number;
-  status: string;
-  timestamp: any;
-  source?: string;
+    id: string;
+    dataset: string;
+    count: number;
+    status: string;
+    timestamp: any;
+    source?: string;
 }
 
 // --- SERVICE ---
 export const KnowledgeService = {
-    
+
     // ==========================================
     // 1. GLOBAL KNOWLEDGE (Layer 1)
     // ==========================================
-    async addGlobalDoc(fileData: { name: string; mimeType: string; fileUri: string }) {
+    async addGlobalDoc(fileData: { name: string; mimeType: string; fileUri: string; targetAgents?: string[] }) {
         if (!db) return;
-        const ref = collection(db, "global_knowledge"); // قبلا global_docs بود، طبق کد شما global_knowledge گذاشتم
+        const ref = collection(db, "global_knowledge");
         await addDoc(ref, {
             ...fileData,
+            targetAgents: fileData.targetAgents || ['all'], // Default to Global
             createdAt: Timestamp.now(),
         });
     },
@@ -110,7 +112,7 @@ export const KnowledgeService = {
         if (!db) return [];
         try {
             const q = query(
-                collection(db, "ingest_logs"), 
+                collection(db, "ingest_logs"),
                 orderBy("timestamp", "desc"),
                 limit(20) // گرفتن ۲۰ تای آخر
             );

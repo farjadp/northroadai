@@ -99,14 +99,23 @@ export async function POST(req: Request) {
             const vector = embeddingResult.embedding.values;
 
             const vectorQuery = await adminDb.collection("knowledge_base").findNearest("embedding", vector, {
-                limit: 3,
+                limit: 10, // Fetch more to allow for filtering
                 distanceMeasure: "COSINE",
             });
             const snapshot = await vectorQuery.get();
 
             if (!snapshot.empty) {
-                vectorContext = snapshot.docs.map(doc => doc.data().text).join("\n\n---\n\n");
-                console.log(`🔍 Vector DB: Found ${snapshot.size} relevant facts.`);
+                // 🔥 Access Control Filter
+                const relevantDocs = snapshot.docs.filter(doc => {
+                    const docAgents = doc.data().targetAgents || ['all'];
+                    return docAgents.includes('all') || docAgents.includes(requestedAgentId);
+                });
+
+                if (relevantDocs.length > 0) {
+                    // Take top 3 after filtering
+                    vectorContext = relevantDocs.slice(0, 3).map(doc => doc.data().text).join("\n\n---\n\n");
+                    console.log(`🔍 Vector DB: Found ${relevantDocs.length} relevant docs for ${requestedAgentId}.`);
+                }
             }
         } catch (error) {
             console.warn("⚠️ Vector Search skipped.");
@@ -119,8 +128,14 @@ export async function POST(req: Request) {
 
         const contentParts: any[] = [];
 
+        // Filter Global Files by Agent
+        const relevantGlobalFiles = globalDocs.filter(doc => {
+            const docAgents = doc.targetAgents || ['all'];
+            return docAgents.includes('all') || docAgents.includes(requestedAgentId);
+        });
+
         // Add Files
-        [...globalDocs, ...userDocs].forEach((doc: any) => {
+        [...relevantGlobalFiles, ...userDocs].forEach((doc: any) => {
             if (doc.fileUri) contentParts.push({ fileData: { mimeType: doc.mimeType, fileUri: doc.fileUri } });
         });
         if (fileData?.fileUri) {
