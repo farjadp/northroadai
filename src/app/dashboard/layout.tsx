@@ -18,8 +18,8 @@
 "use client";
 import React, { useState, useRef } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation"; 
-import { useAuth } from "@/context/auth-context"; 
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/context/auth-context";
 import {
   User,
   MessageSquare,
@@ -28,8 +28,11 @@ import {
   LogOut,
   Library, // برای Resources
   Swords,  // برای Arena (آیکون شمشیر)
-  Users 
+  Users,
+  CreditCard,
+  GitCommit
 } from "lucide-react";
+import { APP_VERSION } from "@/lib/constants";
 
 // --- SPOTLIGHT WRAPPER ---
 function DashboardSpotlight({ children }: { children: React.ReactNode }) {
@@ -68,11 +71,11 @@ function DashboardSpotlight({ children }: { children: React.ReactNode }) {
 export default function FounderLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth(); 
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
     await logout();
-    router.push("/login"); 
+    router.push("/login");
   };
 
   // لیست کامل منو
@@ -83,6 +86,8 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
     { name: "Resources", href: "/dashboard/resources", icon: <Library size={18} /> },
     { name: "Startup DNA", href: "/dashboard/profile", icon: <User size={18} /> },
     { name: "Mentors", href: "/dashboard/mentors", icon: <Users size={18} /> },
+    { name: "Billing", href: "/dashboard/billing", icon: <CreditCard size={18} /> },
+    { name: "Changelog", href: "/dashboard/changelog", icon: <GitCommit size={18} /> },
     { name: "Settings", href: "/dashboard/settings", icon: <Settings size={18} /> },
   ];
 
@@ -104,21 +109,20 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               const isArena = item.href === "/dashboard/arena";
-              
+
               return (
                 <Link key={item.href} href={item.href}>
-                  <div className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-300 group ${
-                      isActive
-                      ? "bg-white/5 text-white border border-white/10 shadow-inner"
-                      : "text-slate-500 hover:text-cyan-400 hover:bg-white/5"
+                  <div className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-300 group ${isActive
+                    ? "bg-white/5 text-white border border-white/10 shadow-inner"
+                    : "text-slate-500 hover:text-cyan-400 hover:bg-white/5"
                     } ${isArena && !isActive ? "hover:text-red-500 hover:bg-red-950/10" : ""}`}> {/* استایل قرمز برای آرنا */}
-                    
+
                     <div className={isActive ? (isArena ? "text-red-500" : "text-cyan-400") : "group-hover:text-current transition"}>
                       {item.icon}
                     </div>
-                    
+
                     <span className="hidden md:block">{item.name}</span>
-                    
+
                     {isActive && (
                       <div className={`ml-auto w-1.5 h-1.5 rounded-full hidden md:block ${isArena ? "bg-red-500 shadow-[0_0_8px_#ef4444]" : "bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)]"}`}></div>
                     )}
@@ -158,7 +162,7 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
         <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 sticky top-0 bg-[#050505]/80 backdrop-blur-md z-40">
           <div className="text-xs font-mono text-slate-500 flex items-center gap-2">
             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            SYSTEM: ONLINE
+            SYSTEM: ONLINE <span className="opacity-30">|</span> <span className="text-slate-600">{APP_VERSION}</span>
           </div>
           <div className="flex items-center gap-4">
             {user?.photoURL && (

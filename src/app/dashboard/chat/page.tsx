@@ -1,10 +1,12 @@
 // ============================================================================
 // 📁 Hardware Source: src/app/dashboard/chat/page.tsx
-// 🕒 Date: 2025-12-01 11:00
-// 🧠 Version: v4.1 (Full Logic + Transparent Loading UI)
+// 🕒 Date: 2025-12-05
+// 🧠 Version: v5.0 (Transparent Source Confidence)
 // ----------------------------------------------------------------------------
-// ✅ Logic: All original logic PRESERVED.
-// ✅ Feature: Connected the 'loadingText' logic to the actual UI.
+// ✅ Fixes:
+// 1. Receives and stores 'confidenceScore' from API.
+// 2. Passes score to MessageBubble for visualization.
+// 3. Maintained all existing chat logic.
 // ============================================================================
 
 "use client";
@@ -21,7 +23,9 @@ import {
   X,
   Lock,
   History,
-  Compass
+  Compass,
+  CheckCircle,
+  ShieldCheck
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { getStartupDNA, StartupProfile } from "@/lib/api/startup";
@@ -30,7 +34,7 @@ import { UserService } from "@/lib/user-service";
 import { HistoryService, ChatSession } from "@/lib/api/history";
 import { ChatSidebar } from "@/components/chat/chat-sidebar";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MessageBubble } from "@/components/chat/message-bubble"; // <--- این خط را اضافه کنید
+import { MessageBubble } from "@/components/chat/message-bubble";
 
 
 // --- CONSTANTS ---
@@ -50,6 +54,12 @@ type Message = {
   role: "user" | "ai";
   content: string;
   timestamp: Date;
+  sources?: {
+    files?: number;
+    knowledge_base?: boolean;
+    internal_knowledge?: boolean;
+  };
+  confidenceScore?: number;
 };
 
 type Attachment = {
@@ -69,27 +79,37 @@ function PiraChatContent() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [historySidebarOpen, setHistorySidebarOpen] = useState(true);
-  
+
   const [selectedAgent, setSelectedAgent] = useState<Agent>(AGENTS[0]);
-  
+
   const [agentSidebarOpen, setAgentSidebarOpen] = useState(false);
   const [unlockModalOpen, setUnlockModalOpen] = useState(false);
   const [agentToUnlock, setAgentToUnlock] = useState<Agent | null>(null);
-  
+
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [startupContext, setStartupContext] = useState<StartupProfile | null>(null);
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // استیت جدید برای متن لودینگ
   const [loadingText, setLoadingText] = useState(LOADING_STEPS[0]);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
 
   // --- EFFECTS ---
+
+  // 0. CHECK FOR PAYMENT SUCCESS
+  useEffect(() => {
+    if (searchParams.get("payment") === "success") {
+      setSuccessModalOpen(true);
+      // Refresh unlocked agents in background
+      if (refreshUnlockedAgents) refreshUnlockedAgents();
+    }
+  }, [searchParams]);
 
   // 1. Initial Load & URL Parsing
   useEffect(() => {
@@ -120,24 +140,24 @@ function PiraChatContent() {
 
       getStartupDNA(user.uid).then((data) => {
         if (data) {
-            console.log("✅ DNA Found, generating smart welcome...");
-            setStartupContext(data);
-            if (!urlSessionId && messages.length === 0) {
-                generateSmartWelcome(data);
-            }
+          console.log("✅ DNA Found, generating smart welcome...");
+          setStartupContext(data);
+          if (!urlSessionId && messages.length === 0) {
+            generateSmartWelcome(data);
+          }
         } else {
-            console.log("⚠️ No DNA found, showing default welcome.");
-            if (!urlSessionId && messages.length === 0) {
-                setMessages([{
-                    id: "intro", 
-                    role: "ai", 
-                    content: "Greetings, Founder. Connection established.\n\nI noticed you haven't set up your **Startup DNA** yet. I can give you better advice if you fill out your profile.\n\nFor now, how can I assist you?", 
-                    timestamp: new Date()
-                }]);
-            }
+          console.log("⚠️ No DNA found, showing default welcome.");
+          if (!urlSessionId && messages.length === 0) {
+            setMessages([{
+              id: "intro",
+              role: "ai",
+              content: "Greetings, Founder. Connection established.\n\nI noticed you haven't set up your **Startup DNA** yet. I can give you better advice if you fill out your profile.\n\nFor now, how can I assist you?",
+              timestamp: new Date()
+            }]);
+          }
         }
       }).catch(err => {
-          console.error("❌ DNA Fetch Error:", err);
+        console.error("❌ DNA Fetch Error:", err);
       });
     }
   }, [user, urlSessionId]);
@@ -161,7 +181,7 @@ function PiraChatContent() {
       loadSessionMessages(urlSessionId);
     } else if (!urlSessionId) {
       setCurrentSessionId(null);
-      setMessages([]); 
+      setMessages([]);
       if (startupContext) generateSmartWelcome(startupContext);
     }
   }, [urlSessionId, user]);
@@ -169,34 +189,34 @@ function PiraChatContent() {
   // --- FUNCTIONS ---
 
   const generateSmartWelcome = async (profile: StartupProfile) => {
-      if (messages.length > 0 || isLoading) return; 
-      
-      setIsLoading(true);
-      try {
-          const res = await fetch("/api/chat", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ 
-                  message: "GENERATE_WELCOME_MESSAGE",
-                  startupContext: profile,
-                  agentId: selectedAgent.id,
-                  isSystemInstruction: true
-              }),
-          });
-          const data = await res.json();
-          if (data.reply) {
-              setMessages([{
-                  id: "welcome-" + Date.now(),
-                  role: "ai",
-                  content: data.reply,
-                  timestamp: new Date()
-              }]);
-          }
-      } catch (e) {
-          console.warn("Welcome gen failed", e);
-      } finally {
-          setIsLoading(false);
+    if (messages.length > 0 || isLoading) return;
+
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: "GENERATE_WELCOME_MESSAGE",
+          startupContext: profile,
+          agentId: selectedAgent.id,
+          isSystemInstruction: true
+        }),
+      });
+      const data = await res.json();
+      if (data.reply) {
+        setMessages([{
+          id: "welcome-" + Date.now(),
+          role: "ai",
+          content: data.reply,
+          timestamp: new Date()
+        }]);
       }
+    } catch (e) {
+      console.warn("Welcome gen failed", e);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -209,7 +229,7 @@ function PiraChatContent() {
     try {
       const history = await HistoryService.getSessionMessages(user.uid, sessionId);
       const session = sessions.find(s => s.id === sessionId);
-      
+
       if (session) {
         const agent = getAgentById(session.agentId);
         if (agent) setSelectedAgent(agent);
@@ -250,25 +270,25 @@ function PiraChatContent() {
 
   const handleAgentSwitch = (agent: Agent) => {
     const hasAccess = unlockedAgents.includes(agent.id) || !agent.isPremium;
-    
+
     if (!hasAccess) {
       setAgentToUnlock(agent);
       setUnlockModalOpen(true);
       return;
     }
-    
+
     setSelectedAgent(agent);
-    
+
     if (!currentSessionId && startupContext) {
-        setMessages([]); 
-        generateSmartWelcome(startupContext);
+      setMessages([]);
+      generateSmartWelcome(startupContext);
     }
     setAgentSidebarOpen(false);
   };
 
-const handleUnlock = async () => {
+  const handleUnlock = async () => {
     if (!agentToUnlock || !user) return;
-    
+
     // تغییر متن دکمه به حالت لودینگ (اختیاری ولی خوبه)
     // alert("Connecting to Stripe..."); 
 
@@ -329,7 +349,7 @@ const handleUnlock = async () => {
     if (isLoading || isUploading || !user?.uid) return;
 
     const displayContent = input + (attachment ? `\n\n📎 [Attached: ${attachment.name}]` : "");
-    
+
     const userMsg: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -376,7 +396,9 @@ const handleUnlock = async () => {
           id: (Date.now() + 1).toString(),
           role: "ai",
           content: data.reply,
-          timestamp: new Date()
+          timestamp: new Date(),
+          sources: data.sources, // Capture sources from API
+          confidenceScore: data.confidenceScore // Capture confidence
         };
         setMessages((prev) => [...prev, aiMsg]);
         await HistoryService.addMessageToSession(user.uid, activeSessionId, "ai", data.reply);
@@ -409,7 +431,7 @@ const handleUnlock = async () => {
 
   return (
     <div className="flex h-[calc(100vh-140px)] max-w-7xl mx-auto relative gap-4">
-      
+
       {/* HISTORY SIDEBAR */}
       <ChatSidebar
         sessions={sessions}
@@ -436,29 +458,28 @@ const handleUnlock = async () => {
                 <X size={16} />
               </button>
             </div>
-            
+
             {AGENTS.map(agent => {
               const isActive = selectedAgent.id === agent.id;
               const hasAccess = unlockedAgents.includes(agent.id) || !agent.isPremium;
               const isLocked = !hasAccess;
-              const AgentIcon = agent.icon; 
+              const AgentIcon = agent.icon;
 
               return (
                 <motion.button
                   key={agent.id}
                   onClick={() => handleAgentSwitch(agent)}
                   whileHover={{ scale: isLocked ? 1 : 1.02 }}
-                  className={`relative p-3 rounded-xl text-left transition-all group ${
-                    isActive
-                      ? `bg-${agent.themeColor}-900/20 border border-${agent.themeColor}-500/50`
-                      : isLocked
-                        ? "bg-white/5 border border-transparent opacity-60 cursor-not-allowed"
-                        : "bg-white/5 border border-transparent hover:bg-white/10 hover:border-white/10"
-                  }`}
+                  className={`relative p-3 rounded-xl text-left transition-all group ${isActive
+                    ? `bg-${agent.themeColor}-900/20 border border-${agent.themeColor}-500/50`
+                    : isLocked
+                      ? "bg-white/5 border border-transparent opacity-60 cursor-not-allowed"
+                      : "bg-white/5 border border-transparent hover:bg-white/10 hover:border-white/10"
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className={`${agent.colorClass} p-1.5 rounded-lg bg-white/5`}>
-                        <AgentIcon size={20} />
+                      <AgentIcon size={20} />
                     </div>
                     {isLocked && <Lock size={14} className="text-slate-500" />}
                   </div>
@@ -473,7 +494,7 @@ const handleUnlock = async () => {
 
       {/* MAIN CHAT */}
       <div className="flex-1 flex flex-col relative rounded-2xl overflow-hidden border border-white/5 bg-[#0a0a0a]">
-        
+
         <div className="absolute top-3 left-3 z-10">
           {!historySidebarOpen && (
             <button
@@ -491,22 +512,22 @@ const handleUnlock = async () => {
             onClick={() => setAgentSidebarOpen(true)}
           >
             <div className={`p-1.5 rounded-lg bg-white/5 ${selectedAgent.colorClass} group-hover:bg-white/10 transition-colors`}>
-                <SelectedAgentIcon size={20} />
+              <SelectedAgentIcon size={20} />
             </div>
             <div>
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-white tracking-wide">{selectedAgent.name.toUpperCase()}</span>
-                    <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-slate-400 group-hover:text-white transition-colors">SWITCH</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <div className={`w-1.5 h-1.5 rounded-full ${startupContext ? "bg-emerald-500" : "bg-amber-500 animate-pulse"}`}></div>
-                    <span className="text-[10px] font-mono text-slate-500">
-                        {startupContext ? `CONTEXT: ${startupContext.name}` : "LOADING CONTEXT..."}
-                    </span>
-                </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-white tracking-wide">{selectedAgent.name.toUpperCase()}</span>
+                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-slate-400 group-hover:text-white transition-colors">SWITCH</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className={`w-1.5 h-1.5 rounded-full ${startupContext ? "bg-emerald-500" : "bg-amber-500 animate-pulse"}`}></div>
+                <span className="text-[10px] font-mono text-slate-500">
+                  {startupContext ? `CONTEXT: ${startupContext.name}` : "LOADING CONTEXT..."}
+                </span>
+              </div>
             </div>
           </div>
-          
+
           <button onClick={() => setMessages([])} className="text-slate-600 hover:text-white transition p-2 hover:bg-white/5 rounded-lg">
             <RefreshCw size={16} />
           </button>
@@ -514,10 +535,10 @@ const handleUnlock = async () => {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
           {messages.length === 0 && !isLoading && (
-             <div className="flex flex-col items-center justify-center h-full opacity-50 space-y-4">
-                 <SelectedAgentIcon size={48} className={selectedAgent.colorClass} />
-                 <p className="text-sm text-slate-500 font-mono">INITIALIZING ENCRYPTED UPLINK...</p>
-             </div>
+            <div className="flex flex-col items-center justify-center h-full opacity-50 space-y-4">
+              <SelectedAgentIcon size={48} className={selectedAgent.colorClass} />
+              <p className="text-sm text-slate-500 font-mono">INITIALIZING ENCRYPTED UPLINK...</p>
+            </div>
           )}
 
           <AnimatePresence>
@@ -528,61 +549,76 @@ const handleUnlock = async () => {
                 animate={{ opacity: 1, y: 0 }}
                 className={`flex gap-4 max-w-3xl mx-auto w-full ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
-                    msg.role === "ai" 
-                    ? `bg-slate-900 border-slate-800 ${selectedAgent.colorClass}` 
-                    : "bg-white/10 border-white/10 text-white"
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${msg.role === "ai"
+                  ? `bg-slate-900 border-slate-800 ${selectedAgent.colorClass}`
+                  : "bg-white/10 border-white/10 text-white"
                   }`}>
                   {msg.role === "ai" ? <Bot size={16} /> : <UserIcon size={16} />}
                 </div>
 
 
-{/* Message Bubble (Updated with Markdown) */}
-                <div className={`relative max-w-[85%] p-4 rounded-2xl shadow-sm ${
-                    msg.role === "ai"
-                    ? "bg-[#0f0f0f] border border-white/10" // استایل هوش مصنوعی
-                    : "bg-gradient-to-br from-emerald-600 to-teal-700 text-white" // استایل کاربر
+                {/* Message Bubble (Updated with Markdown) */}
+                <div className={`relative max-w-[85%] p-4 rounded-2xl shadow-sm ${msg.role === "ai"
+                  ? "bg-[#0f0f0f] border border-white/10" // استایل هوش مصنوعی
+                  : "bg-gradient-to-br from-emerald-600 to-teal-700 text-white" // استایل کاربر
                   }`}>
-                  
+
                   {/* استفاده از کامپوننت جدید */}
-                  <MessageBubble content={msg.content} isUser={msg.role === "user"} />
+                  <MessageBubble
+                    content={msg.content}
+                    isUser={msg.role === "user"}
+                    messageId={msg.id}
+                    sources={msg.sources}
+                    confidenceScore={msg.confidenceScore}
+                    onFeedback={async (id, rating) => {
+                      await fetch("/api/chat/feedback", {
+                        method: "POST",
+                        body: JSON.stringify({
+                          messageId: id,
+                          rating,
+                          userId: user?.uid,
+                          agentId: selectedAgent.id
+                        })
+                      });
+                    }}
+                  />
 
                   <div className={`text-[9px] font-mono mt-2 opacity-50 ${msg.role === "user" ? "text-emerald-100" : "text-slate-600"}`}>
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
 
-                
+
               </motion.div>
             ))}
           </AnimatePresence>
 
           {/* 🔥 MODIFIED: NEW LOADING UI WITH ANIMATED TEXT */}
           {isLoading && (
-            <motion.div 
-                initial={{ opacity: 0, y: 10 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                className="flex gap-4 max-w-3xl mx-auto w-full items-center"
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex gap-4 max-w-3xl mx-auto w-full items-center"
             >
               <div className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0">
                 <Loader2 size={16} className={`${selectedAgent.colorClass} animate-spin`} />
               </div>
-              
+
               <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500 animate-pulse font-mono">
-                        {loadingText}
-                    </span>
-                  </div>
-                  {/* Progress Bar Decoration */}
-                  <div className="h-0.5 w-32 bg-slate-800 rounded-full overflow-hidden">
-                      <motion.div 
-                        className="h-full bg-emerald-500"
-                        initial={{ x: "-100%" }}
-                        animate={{ x: "100%" }}
-                        transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-                      />
-                  </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500 animate-pulse font-mono">
+                    {loadingText}
+                  </span>
+                </div>
+                {/* Progress Bar Decoration */}
+                <div className="h-0.5 w-32 bg-slate-800 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-emerald-500"
+                    initial={{ x: "-100%" }}
+                    animate={{ x: "100%" }}
+                    transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                  />
+                </div>
               </div>
             </motion.div>
           )}
@@ -592,65 +628,65 @@ const handleUnlock = async () => {
         <div className="p-4 bg-gradient-to-t from-black via-black to-transparent">
           <div className="max-w-3xl mx-auto">
             <AnimatePresence>
-                {attachment && (
+              {attachment && (
                 <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="flex items-center gap-2 mb-2 p-2 bg-emerald-900/20 border border-emerald-500/30 rounded-lg w-fit"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="flex items-center gap-2 mb-2 p-2 bg-emerald-900/20 border border-emerald-500/30 rounded-lg w-fit"
                 >
-                    <FileText size={14} className="text-emerald-400" />
-                    <span className="text-xs text-emerald-200 truncate max-w-[200px] font-mono">{attachment.name}</span>
-                    <button onClick={() => setAttachment(null)} className="hover:text-red-400 transition-colors ml-2">
+                  <FileText size={14} className="text-emerald-400" />
+                  <span className="text-xs text-emerald-200 truncate max-w-[200px] font-mono">{attachment.name}</span>
+                  <button onClick={() => setAttachment(null)} className="hover:text-red-400 transition-colors ml-2">
                     <X size={14} />
-                    </button>
+                  </button>
                 </motion.div>
-                )}
+              )}
             </AnimatePresence>
 
             <div className="relative flex items-end bg-[#0f0f0f] border border-white/10 rounded-xl p-2 focus-within:border-emerald-500/50 focus-within:shadow-[0_0_20px_rgba(16,185,129,0.1)] transition-all">
-                <input
+              <input
                 type="file"
                 ref={fileInputRef}
                 className="hidden"
                 accept="application/pdf,text/plain,text/csv"
                 onChange={handleFileSelect}
-                />
+              />
 
-                <button
+              <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading || isLoading}
                 className="p-3 text-slate-400 hover:text-emerald-400 transition-colors disabled:opacity-50"
                 title="Attach Intel (PDF/CSV)"
-                >
+              >
                 {isUploading ? <Loader2 size={18} className="animate-spin text-emerald-500" /> : <Paperclip size={18} />}
-                </button>
+              </button>
 
-                <textarea
+              <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={attachment ? "Brief me on this file..." : `Direct uplink to ${selectedAgent.name}...`}
                 className="w-full bg-transparent text-white placeholder:text-slate-600 text-sm px-2 py-3 outline-none resize-none h-12 max-h-32 scrollbar-thin"
                 rows={1}
-                />
+              />
 
-                <button
+              <button
                 onClick={handleSend}
                 disabled={(!input.trim() && !attachment) || isLoading || isUploading}
                 className="p-3 bg-white text-black rounded-lg hover:bg-emerald-400 hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-0.5"
-                >
+              >
                 <Send size={18} />
-                </button>
+              </button>
             </div>
 
             <div className="text-center mt-2 flex justify-between px-2 opacity-50 hover:opacity-100 transition-opacity">
-                <p className="text-[10px] text-slate-600 font-mono">
+              <p className="text-[10px] text-slate-600 font-mono">
                 SECURE LINE // ENCRYPTED
-                </p>
-                <p className="text-[10px] text-slate-600 font-mono">
+              </p>
+              <p className="text-[10px] text-slate-600 font-mono">
                 AI may hallucinate. Verify critical intel.
-                </p>
+              </p>
             </div>
           </div>
         </div>
@@ -676,7 +712,7 @@ const handleUnlock = async () => {
 
               <div className="text-center mb-8 relative z-10">
                 <div className={`mx-auto w-20 h-20 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 mb-4 ${agentToUnlock.colorClass}`}>
-                    {React.createElement(agentToUnlock.icon, { size: 40 })}
+                  {React.createElement(agentToUnlock.icon, { size: 40 })}
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2">{agentToUnlock.name}</h3>
                 <p className="text-sm text-slate-400 leading-relaxed">{agentToUnlock.description}</p>
@@ -684,8 +720,8 @@ const handleUnlock = async () => {
 
               <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-4 mb-6 relative z-10">
                 <div className="flex justify-between items-center mb-1">
-                    <p className="text-xs text-slate-500 uppercase tracking-wider">CLEARANCE COST</p>
-                    <span className="text-xs text-emerald-400 font-bold bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-500/20">LIFETIME ACCESS</span>
+                  <p className="text-xs text-slate-500 uppercase tracking-wider">CLEARANCE COST</p>
+                  <span className="text-xs text-emerald-400 font-bold bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-500/20">LIFETIME ACCESS</span>
                 </div>
                 <p className="text-4xl font-bold text-white">$9</p>
               </div>
@@ -708,6 +744,58 @@ const handleUnlock = async () => {
               <p className="text-[10px] text-slate-600 text-center mt-6 font-mono">
                 // Mock Transaction Protocol Initiated
               </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* SUCCESS MODAL */}
+      <AnimatePresence>
+        {successModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setSuccessModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, y: 50, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 20 } }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-slate-900 border border-emerald-500/50 rounded-2xl p-8 max-w-sm w-full shadow-[0_0_50px_rgba(16,185,129,0.2)] relative overflow-hidden text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Glow Effect */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-emerald-500/20 blur-[60px] rounded-full pointer-events-none"></div>
+
+              <div className="relative z-10 flex flex-col items-center">
+                <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4 border border-emerald-500/20 animate-bounce">
+                  <CheckCircle size={40} className="text-emerald-400" />
+                </div>
+
+                <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">Access Authorized</h3>
+                <p className="text-slate-400 text-sm mb-6">
+                  Transaction verified. The encrypted uplink is now permanently established.
+                </p>
+
+                <div className="p-4 bg-black/40 rounded-xl border border-white/5 w-full mb-6">
+                  <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">New Clearance</div>
+                  <div className="text-white font-mono font-bold flex items-center justify-center gap-2">
+                    <ShieldCheck size={14} className="text-emerald-500" /> LIFETIME ACCESS
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setSuccessModalOpen(false);
+                    router.replace("/dashboard/chat");
+                  }}
+                  className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold transition-all hover:scale-[1.02]"
+                >
+                  INITIATE MISSION
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

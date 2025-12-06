@@ -6,28 +6,28 @@
 // ✅ Logic: Accepts email directly from client request.
 // ============================================================================
 
+// src/app/api/stripe/checkout/route.ts
 import { NextResponse } from "next/server";
-import { stripe, APP_URL } from "@/lib/stripe";
+import Stripe from "stripe";
 
 export const dynamic = 'force-dynamic';
 
+// 1. Initialize Stripe directly here
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-11-20.acacia",
+});
+
+const APP_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://northroadai.run.app";
+
 export async function POST(req: Request) {
   try {
-    // دریافت ایمیل مستقیم از کلاینت
     const { userId, userEmail, agentId } = await req.json();
 
-    if (!userId || !userEmail) {
-        return NextResponse.json({ error: "Missing user credentials" }, { status: 400 });
+    if (!userId || !agentId) {
+        return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // چک کردن کلید استرایپ
-    if (!process.env.STRIPE_SECRET_KEY) {
-        console.error("❌ STRIPE_SECRET_KEY is missing in env vars");
-        return NextResponse.json({ error: "Server misconfiguration: Stripe Key missing" }, { status: 500 });
-    }
-
-    console.log(`💳 Creating checkout for: ${userEmail}`);
-
+    // 2. Create Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -35,9 +35,8 @@ export async function POST(req: Request) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: "North Road AI - Agent Unlock",
-              description: "Lifetime access to Premium Agent",
-              images: ["https://northroad.ai/logo.png"], // اختیاری
+              name: `Unlock Agent: ${agentId.toUpperCase()}`,
+              description: "Lifetime access to specialized AI mentor.",
             },
             unit_amount: 900, // $9.00
           },
@@ -45,12 +44,14 @@ export async function POST(req: Request) {
         },
       ],
       mode: "payment",
-      success_url: `${APP_URL}/dashboard/chat?payment=success`,
+      success_url: `${APP_URL}/dashboard/chat?agent=${agentId}&payment=success`,
       cancel_url: `${APP_URL}/dashboard/chat?payment=cancelled`,
-      customer_email: userEmail, // ایمیل را مستقیم ست میکنیم
+      customer_email: userEmail,
+      
+      // 3. Metadata for Webhook
       metadata: {
-        userId: userId,
-        agentId: agentId || "general", // ذخیره میکنیم که چه چیزی خریده
+        userId,
+        agentId,
         type: "AGENT_UNLOCK"
       },
     });

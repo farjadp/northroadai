@@ -12,9 +12,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, Database, Settings, LogOut, TerminalSquare, KeySquare, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Users, Database, Settings, LogOut, TerminalSquare, KeySquare, TrendingUp, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils"; // مطمئن شوید فایل utils دارید یا این را حذف کنید
 import { useAuth } from "@/context/auth-context";
+import { APP_VERSION } from "@/lib/constants";
 
 // --- REUSING THE SPOTLIGHT EFFECT ---
 function AdminSpotlight({ children }: { children: React.ReactNode }) {
@@ -68,6 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Mentors", href: "/dashboard/mentors", icon: <Users size={18} /> },
     { name: "Business Analytics", href: "/admin/business", icon: <TrendingUp size={18} /> },
     { name: "System Logs", href: "/admin/logs", icon: <TerminalSquare size={18} /> },
+    { name: "Transactions", href: "/admin/transactions", icon: <CreditCard size={18} /> },
   ];
 
   useEffect(() => {
@@ -93,7 +95,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="w-8 h-8 bg-cyan-900/20 border border-cyan-500/50 rounded flex items-center justify-center text-cyan-400 font-bold text-xs">
               NR
             </div>
-            <span className="font-mono font-bold text-white tracking-tight">ADMIN_CORE</span>
+            <div>
+              <span className="font-mono font-bold text-white tracking-tight block">ADMIN_CORE</span>
+              <span className="text-[10px] text-cyan-700 font-mono tracking-widest">{APP_VERSION}</span>
+            </div>
           </div>
 
           <nav className="space-y-1">

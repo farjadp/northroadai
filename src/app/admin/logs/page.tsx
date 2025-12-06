@@ -1,11 +1,11 @@
 // ============================================================================
 // 📁 Hardware Source: src/app/admin/logs/page.tsx
-// 🕒 Date: 2025-11-30
-// 🧠 Version: v1.0 (System Logs Center)
+// 🕒 Date: 2025-12-05
+// 🧠 Version: v2.0 (Real Logs)
 // ----------------------------------------------------------------------------
 // ✅ Logic:
-// - Shows grouped logs: Admin Alerts, User Events, Activity Metrics.
-// - Mock data for now; wire to real backend later.
+// - Shows REAL grouped logs from /api/admin/logs
+// - Displays rich metadata (Tokens, Latency, Model)
 // - Provides quick filters and severity badges.
 // ============================================================================
 
@@ -13,7 +13,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import type { JSX } from "react";
-import { ShieldAlert, Bell, Activity, Users, Filter, Clock, Server, CheckCircle2, AlertTriangle, Flame } from "lucide-react";
+import { ShieldAlert, Bell, Activity, Users, Filter, Clock, Server, CheckCircle2, AlertTriangle, Flame, Cpu, Database } from "lucide-react";
 import BrainStats from "@/components/BrainStats";
 
 type LogEntry = {
@@ -72,7 +72,7 @@ export default function AdminLogsPage() {
         <div>
           <p className="text-xs font-mono text-cyan-400 uppercase tracking-widest">System Logs</p>
           <h1 className="text-3xl font-bold text-white">Observability Center</h1>
-          <p className="text-sm text-slate-500 font-mono">Admin alerts, user events, and operational activity.</p>
+          <p className="text-sm text-slate-500 font-mono">Real-time system telemetry and user events.</p>
         </div>
         <div className="flex items-center gap-3">
           <FilterButton active={filter === "all"} onClick={() => setFilter("all")} label="All" />
@@ -87,12 +87,19 @@ export default function AdminLogsPage() {
         <div className="flex items-center gap-2 text-sm font-mono text-slate-500 uppercase tracking-widest">
           <Server size={16} className="text-cyan-500" /> Live Signals
         </div>
-        <BrainStats variant="compact" />
-        <div className="flex gap-3 text-xs text-slate-400 font-mono">
-          <Badge icon={<Bell size={12} />} text="Admin alerts x2" />
-          <Badge icon={<Users size={12} />} text="User events x2" />
-          <Badge icon={<Activity size={12} />} text="Ops events x2" />
+
+        {/* Mock BrainStats or remove if broken. Keeping simple Stats row here for now */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-3 bg-white/5 rounded border border-white/5">
+            <div className="text-xs text-slate-400">Total Logs</div>
+            <div className="text-xl font-bold text-white font-mono">{logs.length}</div>
+          </div>
+          <div className="p-3 bg-white/5 rounded border border-white/5">
+            <div className="text-xs text-slate-400">Errors</div>
+            <div className="text-xl font-bold text-red-400 font-mono">{logs.filter(l => l.severity === 'critical').length}</div>
+          </div>
         </div>
+
       </section>
 
       {/* Logs List */}
@@ -111,28 +118,46 @@ export default function AdminLogsPage() {
           </div>
         )}
 
-        {!loading && !error && filtered.map((log) => (
-          <article
-            key={log.id}
-            className="p-4 rounded-xl border border-white/10 bg-white/[0.03] hover:border-cyan-500/20 transition"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center gap-2 ${severityStyle[log.severity]}`}>
-                {log.severity === "critical" ? <Flame size={12} /> : log.severity === "warn" ? <AlertTriangle size={12} /> : <CheckCircle2 size={12} />}
-                <span className="uppercase">{log.severity}</span>
+        {!loading && !error && filtered.map((log) => {
+          let metaObj: any = null;
+          try { if (log.meta) metaObj = JSON.parse(log.meta); } catch (e) { }
+
+          return (
+            <article
+              key={log.id}
+              className="p-4 rounded-xl border border-white/10 bg-white/[0.03] hover:border-cyan-500/20 transition group"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`px-2 py-1 rounded-lg text-xs font-mono flex items-center gap-2 ${severityStyle[log.severity]}`}>
+                  {log.severity === "critical" ? <Flame size={12} /> : log.severity === "warn" ? <AlertTriangle size={12} /> : <CheckCircle2 size={12} />}
+                  <span className="uppercase">{log.severity}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  {typeIcon[log.type]}
+                  <span className="uppercase font-mono">{log.type}</span>
+                  <span className="text-slate-600">•</span>
+                  <span>{log.ts}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                {typeIcon[log.type]}
-                <span className="uppercase font-mono">{log.type}</span>
-                <span className="text-slate-600">•</span>
-                <span>{log.ts}</span>
+
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-white font-bold tracking-tight">{log.title}</h3>
+                  <p className="text-slate-400 text-sm mt-1">{log.detail}</p>
+                </div>
               </div>
-            </div>
-            <h3 className="text-white font-semibold">{log.title}</h3>
-            <p className="text-slate-400 text-sm">{log.detail}</p>
-            {log.meta && <p className="text-xs text-slate-500 font-mono mt-1">{log.meta}</p>}
-          </article>
-        ))}
+
+              {/* Metadata Preview */}
+              {metaObj && (
+                <div className="mt-3 p-3 bg-black/50 rounded-lg border border-white/5 text-xs font-mono text-slate-400 flex flex-wrap gap-4">
+                  {metaObj.model && <div className="flex items-center gap-1 text-cyan-300"><Cpu size={12} /> {metaObj.model}</div>}
+                  {metaObj.tokens?.totalTokens && <div className="flex items-center gap-1 text-emerald-300"><Database size={12} /> {metaObj.tokens.totalTokens} toks</div>}
+                  {metaObj.latencyMs && <div className="flex items-center gap-1 text-amber-300"><Clock size={12} /> {metaObj.latencyMs}ms</div>}
+                </div>
+              )}
+            </article>
+          );
+        })}
 
         {filtered.length === 0 && (
           <div className="p-6 rounded-xl border border-white/10 bg-black/40 text-slate-500 text-sm">
@@ -148,20 +173,11 @@ function FilterButton({ active, onClick, label }: { active: boolean; onClick: ()
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-lg text-xs font-mono transition border ${
-        active ? "border-cyan-500/50 text-white bg-cyan-500/10" : "border-white/10 text-slate-400 hover:border-white/30"
-      }`}
+      className={`px-3 py-1.5 rounded-lg text-xs font-mono transition border ${active ? "border-cyan-500/50 text-white bg-cyan-500/10" : "border-white/10 text-slate-400 hover:border-white/30"
+        }`}
     >
       {label}
     </button>
   );
 }
 
-function Badge({ icon, text }: { icon: JSX.Element; text: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-1 rounded border border-white/10 bg-black/30">
-      {icon}
-      {text}
-    </span>
-  );
-}
