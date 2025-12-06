@@ -12,9 +12,9 @@ import Stripe from "stripe";
 
 export const dynamic = 'force-dynamic';
 
-// 1. Initialize Stripe directly here
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-11-20.acacia",
+// 1. Initialize Stripe (Handle build-time missing key)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder", {
+  apiVersion: "2025-11-17.clover",
 });
 
 const APP_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://northroadai.run.app";
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const { userId, userEmail, agentId } = await req.json();
 
     if (!userId || !agentId) {
-        return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     // 2. Create Session
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
       success_url: `${APP_URL}/dashboard/chat?agent=${agentId}&payment=success`,
       cancel_url: `${APP_URL}/dashboard/chat?payment=cancelled`,
       customer_email: userEmail,
-      
+
       // 3. Metadata for Webhook
       metadata: {
         userId,
