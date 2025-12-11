@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [v0.1.3] - 2025-12-11 12:45:00
 
+### 🛡️ Security
+- **Critical Patch**: Upgraded Next.js to **v16.0.7** to resolve CVE-2025-55182 (Deployment Blocker).
+
 ### 🚀 Performance
 - **Caching**: Implemented in-memory LRU Cache (`src/lib/cache.ts`) for embeddings, reducing repeated API calls to Google Gemini AI.
 - **Parallel Scraper**: Updated `/api/admin/scrape` to process chunks in parallel (5x concurrency), speeding up knowledge base ingestion.
