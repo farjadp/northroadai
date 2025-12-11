@@ -2,12 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v0.1.3] - 2025-12-11 12:45:00
+## [v0.1.3] - 2025-12-11 18:00:00
 
 ### 🛡️ Security
 - **Critical Patch**: Upgraded Next.js to **v16.0.7** to resolve CVE-2025-55182 (Deployment Blocker).
 - **Deployment Fix**: Updated `src/lib/firebase.ts` to support build environments where environment variables are missing (Cloud Run), preventing `auth/invalid-api-key` failure.
 - **Deployment Fix**: Updated `src/lib/env.ts` to skip strict validation during build phases (`next build`) when secrets are not yet injected.
+
+### 🏭 Deployment & CI/CD
+- **Dynamic Config**: Replaced hardcoded Cloud Run URL in `src/lib/api-config.ts` with `NEXT_PUBLIC_API_URL` environment variable.
+- **CI/CD**: Added GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) for automated testing and building.
 
 ### 🚀 Performance
 - **Caching**: Implemented in-memory LRU Cache (`src/lib/cache.ts`) for embeddings, reducing repeated API calls to Google Gemini AI.
