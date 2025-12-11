@@ -1,12 +1,13 @@
 // ============================================================================
 // 📁 Hardware Source: src/app/api/upload/route.ts
-// 🕒 Date: 2025-12-05
-// 🧠 Version: v2.1 (Debug Enhanced)
+// 🕒 Date: 2025-12-11
+// 🧠 Version: v3.0 (Secured & Validated)
 // ----------------------------------------------------------------------------
 // ✅ Fixes:
-// 1. Explicit API Key check.
-// 2. Enhanced Error Logging to console (visible in Cloud Run logs).
-// 3. MIME type fallback logic.
+// 1. Removed Hardcoded API Key (Critical).
+// 2. Added Firebase Admin Auth Verification.
+// 3. Added Zod Validation for File Type/Size.
+// 4. Added Audit Logging.
 // ============================================================================
 
 import { GoogleAIFileManager } from "@google/generative-ai/server";
@@ -14,63 +15,102 @@ import { NextResponse } from "next/server";
 import { writeFile, unlink } from "fs/promises";
 import path from "path";
 import os from "os";
+import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { Timestamp } from "firebase-admin/firestore";
+import { UploadValidationSchema } from "@/lib/schemas/admin-validation";
+import { env } from "@/lib/env";
+import { AppError, handleApiError } from "@/lib/api-error";
 
 // Force dynamic is crucial for Cloud Run
 export const dynamic = 'force-dynamic';
 
 // Helper to get manager safely
 const getFileManager = () => {
-  // Fallback key if env var is missing (Replace with your actual key if env var keeps failing)
-  const key = process.env.GEMINI_API_KEY || "AIzaSyDFzblmzu4FWl6u9oBHOrgQT9Y1w2EZ6bI"; 
-  
-  if (!key) {
-    throw new Error("GEMINI_API_KEY is completely missing in server environment");
-  }
-  return new GoogleAIFileManager(key);
+  // env.ts ensures GEMINI_API_KEY exists on start, so we can trust it here.
+  return new GoogleAIFileManager(env.GEMINI_API_KEY);
 };
 
 export async function POST(req: Request) {
   let tempFilePath = "";
 
   try {
+    // 1. AUTHENTICATION (Critical)
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      throw new AppError("Unauthorized: Missing Token", 401);
+    }
+    const token = authHeader.split("Bearer ")[1];
+    const decodedToken = await adminAuth.verifyIdToken(token);
+    const userId = decodedToken.uid;
+    const userEmail = decodedToken.email;
+
+    // Optional: Check if user is admin (if you have custom claims or a specific email list)
+    // if (!decodedToken.admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      throw new AppError("No file provided", 400);
     }
 
-    console.log(`📥 Starting upload for: ${file.name} (${file.type}, ${file.size} bytes)`);
+    console.log(`Starting upload for: ${file.name} (${file.type}, ${file.size} bytes) by ${userEmail}`);
 
-    // 1. Validation
-    // Google AI File API limit is actually 2GB, but let's keep it safe at 500MB
-    if (file.size > 500 * 1024 * 1024) {
-      return NextResponse.json({ error: "File too large (Max 500MB)" }, { status: 413 });
+    // 2. VALIDATION (Zod)
+    // We validate the metadata before processing
+    // Note: Zod schema sees numbers/strings, so we simply check values against schema logic
+    const validationResult = UploadValidationSchema.safeParse({
+      fileSize: file.size,
+      mimeType: file.type
+    });
+
+    if (!validationResult.success) {
+      // Allow if explicit override? No, strict security first.
+      // But maybe we need to support images too if GenAI supports them?
+      // For now, adhere to schema.
+      console.warn("Validation failed:", validationResult.error.format());
+      throw new AppError("Invalid file type or size", 400, validationResult.error.flatten());
     }
 
-    // 2. Generate Unique Filename
+    // 3. Generate Unique Filename
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     // Sanitize filename to be safe for OS
     const safeName = `${uniqueSuffix}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-    
+
     // Use OS temp dir (writable in Cloud Run)
     tempFilePath = path.join(os.tmpdir(), safeName);
 
-    // 3. Write to Temp
+    // 4. Write to Temp
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     await writeFile(tempFilePath, buffer);
-    console.log(`💾 Written to temp: ${tempFilePath}`);
+    console.log(`Written to temp: ${tempFilePath}`);
 
-    // 4. Upload to Google AI
+    // 5. Upload to Google AI
     const fileManager = getFileManager();
-    
+
     const uploadResponse = await fileManager.uploadFile(tempFilePath, {
-      mimeType: file.type, 
+      mimeType: file.type,
       displayName: file.name,
     });
 
-    console.log(`✅ Google Upload Success: ${uploadResponse.file.uri}`);
+    console.log(`Google Upload Success: ${uploadResponse.file.uri}`);
+
+    // 6. AUDIT LOGGING
+    await adminDb.collection("audit_logs").add({
+      action: "UPLOAD_FILE",
+      userId: userId,
+      userEmail: userEmail,
+      details: {
+        fileName: file.name,
+        fileSize: file.size,
+        fileUri: uploadResponse.file.uri,
+        mimeType: file.type
+      },
+      timestamp: Timestamp.now(),
+      status: "SUCCESS",
+      ip: req.headers.get("x-forwarded-for") || "unknown"
+    });
 
     return NextResponse.json({
       fileUri: uploadResponse.file.uri,
@@ -78,20 +118,14 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error("❌ Upload API Critical Error:", error);
-    
-    // Return the actual error message to the frontend for better debugging
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error during upload" }, 
-      { status: 500 }
-    );
+    return handleApiError(error);
 
   } finally {
-    // 5. Cleanup
+    // 7. Cleanup
     if (tempFilePath) {
       try {
         await unlink(tempFilePath);
-        console.log("🧹 Temp file cleaned up");
+        console.log("Temp file cleaned up");
       } catch (e) {
         // Ignore cleanup errors
       }

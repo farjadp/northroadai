@@ -9,6 +9,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { KnowledgeService, KnowledgeDoc, IngestLog } from "@/lib/api/knowledge";
+import { auth } from "@/lib/firebase";
 import { AGENTS } from "@/lib/agents"; // لیست ایجنت‌های سیستم
 import {
     Upload, Trash2, FileText, Database, Loader2,
@@ -125,8 +126,22 @@ function FilesView() {
                 formData.append("file", file);
 
                 try {
-                    const res = await fetch(getApiUrl("/api/upload"), { method: "POST", body: formData });
-                    if (!res.ok) throw new Error(`Failed to upload ${file.name}`);
+                    const user = auth.currentUser;
+                    if (!user) throw new Error("Authentication required for upload");
+                    const token = await user.getIdToken();
+
+                    const res = await fetch(getApiUrl("/api/upload"), {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.error || `Failed to upload ${file.name}`);
+                    }
                     const { fileUri, mimeType } = await res.json();
 
                     await KnowledgeService.addGlobalDoc({

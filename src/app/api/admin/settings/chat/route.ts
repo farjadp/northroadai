@@ -8,50 +8,75 @@
 // 2. GET/POST: Manages global guest limit.
 // ============================================================================
 
-import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { headers } from "next/headers";
+// ============================================================================
+// 📁 Hardware Source: src/app/api/admin/settings/chat/route.ts
+// 🕒 Date: 2025-12-11
+// 🧠 Version: v3.1 (Standardized Errors)
+// ----------------------------------------------------------------------------
+// ✅ Logic:
+// 1. Force Dynamic.
+// 2. SECURED: Requires Firebase ID Token.
+// 3. HANDLED: Uses AppError and handleApiError.
+// ============================================================================
 
+import { NextResponse } from "next/server";
+import { adminDb, adminAuth } from "@/lib/firebase-admin";
+import { Timestamp } from "firebase-admin/firestore";
+import { ChatSettingsSchema } from "@/lib/schemas/admin-validation";
+import { AppError, handleApiError } from "@/lib/api-error";
 
 // ⚠️ حیاتی برای بیلد
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
-        if (!db || !db.type) return NextResponse.json({ limit: 5 }); // Fallback for build time
-
-        const settingsRef = doc(db, "settings", "chat");
-        const settingsSnap = await getDoc(settingsRef);
-        const limit = settingsSnap.exists() ? settingsSnap.data().guestLimit || 5 : 5;
+        const settingsRef = adminDb.collection("settings").doc("chat");
+        const settingsSnap = await settingsRef.get();
+        const limit = settingsSnap.exists ? settingsSnap.data()?.guestLimit || 5 : 5;
 
         return NextResponse.json({ limit });
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return handleApiError(error);
     }
 }
 
 export async function POST(req: Request) {
-    const headersList = headers();
-const secret = headersList.get("x-admin-secret");
-if (secret !== process.env.ADMIN_SECRET) {
-   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-
     try {
-        const { limit } = await req.json();
+        // 1. AUTHENTICATION
+        const authHeader = req.headers.get("Authorization");
+        if (!authHeader?.startsWith("Bearer ")) {
+            throw new AppError("Unauthorized", 401);
+        }
+        const token = authHeader.split("Bearer ")[1];
+        const decodedToken = await adminAuth.verifyIdToken(token);
 
-        if (typeof limit !== 'number' || limit < 0) {
-            return NextResponse.json({ error: "Invalid limit value" }, { status: 400 });
+        // 2. INPUT PARSING & VALIDATION
+        const body = await req.json();
+        const validation = ChatSettingsSchema.safeParse(body);
+
+        if (!validation.success) {
+            throw new AppError("Invalid input", 400, validation.error.flatten());
         }
 
-        if (!db || !db.type) return NextResponse.json({ error: "DB not connected" }, { status: 500 });
+        const { limit } = validation.data;
 
-        const settingsRef = doc(db, "settings", "chat");
-        await setDoc(settingsRef, { guestLimit: limit }, { merge: true });
+        // 3. EXECUTION
+        const settingsRef = adminDb.collection("settings").doc("chat");
+        await settingsRef.set({ guestLimit: limit }, { merge: true });
+
+        // 4. AUDIT LOG
+        await adminDb.collection("audit_logs").add({
+            action: "UPDATE_CHAT_SETTINGS",
+            userId: decodedToken.uid,
+            userEmail: decodedToken.email,
+            details: { previousLimit: "unknown", newLimit: limit },
+            timestamp: Timestamp.now(),
+            status: "SUCCESS",
+            ip: req.headers.get("x-forwarded-for") || "unknown"
+        });
 
         return NextResponse.json({ success: true, limit });
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return handleApiError(error);
     }
 }

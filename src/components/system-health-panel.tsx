@@ -5,13 +5,13 @@ import { Activity, Wifi, Cpu, ShieldCheck, Database } from "lucide-react";
 export function SystemHealthPanel({ className }: { className?: string }) {
   return (
     <div className={`relative overflow-hidden flex items-center justify-between px-6 py-2.5 bg-[#0a0a0a]/60 backdrop-blur-md border border-white/10 rounded-full shadow-lg shadow-cyan-900/5 ${className}`}>
-      
+
       {/* Subtle Background Glow */}
       <div className="absolute top-0 left-0 w-1/3 h-full bg-gradient-to-r from-cyan-500/5 to-transparent pointer-events-none" />
 
       {/* Left: System Status */}
       <div className="flex items-center gap-6 text-[10px] font-mono uppercase tracking-widest relative z-10">
-        
+
         {/* Live Indicator */}
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
@@ -37,22 +37,17 @@ export function SystemHealthPanel({ className }: { className?: string }) {
       </div>
 
       {/* Right: Hardware Icons */}
+      {/* Right: Hardware Icons */}
       <div className="flex gap-4 text-slate-600 relative z-10">
-        <Cpu 
-            size={14} 
-            className="hover:text-cyan-400 transition-colors cursor-help" 
-            title="Neural Engine: Nominal"
-        />
-        <ShieldCheck 
-            size={14} 
-            className="hover:text-emerald-400 transition-colors cursor-help" 
-            title="Encryption: AES-256"
-        />
-        <Wifi 
-            size={14} 
-            className="hover:text-blue-400 transition-colors cursor-help" 
-            title="Uplink: Stable"
-        />
+        <span title="Neural Engine: Nominal" className="hover:text-cyan-400 transition-colors cursor-help">
+          <Cpu size={14} />
+        </span>
+        <span title="Encryption: AES-256" className="hover:text-emerald-400 transition-colors cursor-help">
+          <ShieldCheck size={14} />
+        </span>
+        <span title="Uplink: Stable" className="hover:text-blue-400 transition-colors cursor-help">
+          <Wifi size={14} />
+        </span>
       </div>
     </div>
   );

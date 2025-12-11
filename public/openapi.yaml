@@ -1,0 +1,111 @@
+openapi: 3.0.0
+info:
+  title: North Road AI API
+  description: API documentation for the North Road AI application.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Local Development Server
+
+paths:
+  /api/chat:
+    post:
+      summary: Send a message to the AI agent
+      description: Generates a response from the selected AI agent using RAG and Gemini.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: User's message query.
+                  example: "What is my burn rate?"
+                agentId:
+                  type: string
+                  description: The ID of the agent to query (e.g., 'navigator', 'ledger').
+                userId:
+                  type: string
+                  description: The UID of the authenticated user.
+                history:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      role:
+                        type: string
+                        enum: [user, ai]
+                      content:
+                        type: string
+      responses:
+        '200':
+          description: AI Response generated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reply:
+                    type: string
+                  sources:
+                    type: object
+                  confidenceScore:
+                    type: number
+        '403':
+          description: Agent access denied.
+        '429':
+          description: Daily API usage limit exceeded.
+
+  /api/upload:
+    post:
+      summary: Upload a knowledge file
+      description: Uploads a PDF or text file to the knowledge base (Admin or authenticated user).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: File uploaded and indexed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileUri:
+                    type: string
+                  mimeType:
+                    type: string
+
+  /api/admin/scrape:
+    post:
+      summary: Scrape a website
+      description: Scrapes a URL, extracts content via Jina, chunks it, and saves to Vector DB.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  description: The URL to scrape.
+                targetAgents:
+                  type: array
+                  items:
+                    type: string
+                  description: List of agent IDs allowed to access this knowledge (or 'all').
+      responses:
+        '200':
+          description: Scrape successful.
+        '400':
+          description: Invalid URL or content too short.

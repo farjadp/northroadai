@@ -501,6 +501,7 @@ function PiraChatContent() {
             <button
               onClick={() => setHistorySidebarOpen(true)}
               className="p-2 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-lg hover:border-white/20 transition-colors"
+              aria-label="Open Conversation History"
             >
               <History size={16} className="text-slate-400" />
             </button>
@@ -511,6 +512,10 @@ function PiraChatContent() {
           <div
             className="flex items-center gap-3 cursor-pointer group pl-8"
             onClick={() => setAgentSidebarOpen(true)}
+            role="button"
+            tabIndex={0}
+            aria-label={`Switch Agent. Current: ${selectedAgent.name}`}
+            onKeyDown={(e) => e.key === "Enter" && setAgentSidebarOpen(true)}
           >
             <div className={`p-1.5 rounded-lg bg-white/5 ${selectedAgent.colorClass} group-hover:bg-white/10 transition-colors`}>
               <SelectedAgentIcon size={20} />
@@ -529,7 +534,11 @@ function PiraChatContent() {
             </div>
           </div>
 
-          <button onClick={() => setMessages([])} className="text-slate-600 hover:text-white transition p-2 hover:bg-white/5 rounded-lg">
+          <button
+            onClick={() => setMessages([])}
+            className="text-slate-600 hover:text-white transition p-2 hover:bg-white/5 rounded-lg"
+            aria-label="Clear Chat History"
+          >
             <RefreshCw size={16} />
           </button>
         </div>
@@ -659,6 +668,7 @@ function PiraChatContent() {
                 disabled={isUploading || isLoading}
                 className="p-3 text-slate-400 hover:text-emerald-400 transition-colors disabled:opacity-50"
                 title="Attach Intel (PDF/CSV)"
+                aria-label="Attach File"
               >
                 {isUploading ? <Loader2 size={18} className="animate-spin text-emerald-500" /> : <Paperclip size={18} />}
               </button>
@@ -670,12 +680,14 @@ function PiraChatContent() {
                 placeholder={attachment ? "Brief me on this file..." : `Direct uplink to ${selectedAgent.name}...`}
                 className="w-full bg-transparent text-white placeholder:text-slate-600 text-sm px-2 py-3 outline-none resize-none h-12 max-h-32 scrollbar-thin"
                 rows={1}
+                aria-label="Chat Message Input"
               />
 
               <button
                 onClick={handleSend}
                 disabled={(!input.trim() && !attachment) || isLoading || isUploading}
                 className="p-3 bg-white text-black rounded-lg hover:bg-emerald-400 hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-0.5"
+                aria-label="Send Message"
               >
                 <Send size={18} />
               </button>
@@ -701,6 +713,9 @@ function PiraChatContent() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={() => setUnlockModalOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="unlock-modal-title"
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -715,7 +730,7 @@ function PiraChatContent() {
                 <div className={`mx-auto w-20 h-20 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 mb-4 ${agentToUnlock.colorClass}`}>
                   {React.createElement(agentToUnlock.icon, { size: 40 })}
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-2">{agentToUnlock.name}</h3>
+                <h3 id="unlock-modal-title" className="text-2xl font-bold text-white mb-2">{agentToUnlock.name}</h3>
                 <p className="text-sm text-slate-400 leading-relaxed">{agentToUnlock.description}</p>
               </div>
 
@@ -759,6 +774,9 @@ function PiraChatContent() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={() => setSuccessModalOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="success-modal-title"
           >
             <motion.div
               initial={{ scale: 0.8, y: 50, opacity: 0 }}
@@ -775,7 +793,7 @@ function PiraChatContent() {
                   <CheckCircle size={40} className="text-emerald-400" />
                 </div>
 
-                <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">Access Authorized</h3>
+                <h3 id="success-modal-title" className="text-2xl font-bold text-white mb-2 tracking-tight">Access Authorized</h3>
                 <p className="text-slate-400 text-sm mb-6">
                   Transaction verified. The encrypted uplink is now permanently established.
                 </p>

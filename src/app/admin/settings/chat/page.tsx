@@ -2,6 +2,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { Save, AlertTriangle } from "lucide-react";
+import { auth } from "@/lib/firebase";
 
 
 export default function ChatSettingsPage() {
@@ -31,17 +32,29 @@ export default function ChatSettingsPage() {
         setSaving(true);
         setMessage(null);
         try {
+            const user = auth.currentUser;
+            if (!user) {
+                throw new Error("You must be logged in.");
+            }
+            const token = await user.getIdToken();
+
             const res = await fetch('/api/admin/settings/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ limit: Number(limit) }),
             });
 
-            if (!res.ok) throw new Error("Failed to save");
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || "Failed to save");
+            }
 
             setMessage({ type: 'success', text: "Settings updated successfully." });
-        } catch (error) {
-            setMessage({ type: 'error', text: "Failed to update settings." });
+        } catch (error: any) {
+            setMessage({ type: 'error', text: error.message || "Failed to update settings." });
         } finally {
             setSaving(false);
         }

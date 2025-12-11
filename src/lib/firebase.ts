@@ -15,13 +15,13 @@ import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
 
 // مقادیر مستقیم (از لاگ‌های قبلی شما برداشته شده)
 const firebaseConfig = {
-  apiKey: "AIzaSyBJ2loREYHm2suzueqpbPrbvH3_1Nva9Uk",
-  authDomain: "north-road-ai.firebaseapp.com",
-  projectId: "north-road-ai",
-  storageBucket: "north-road-ai.firebasestorage.app",
-  messagingSenderId: "851251000176",
-  appId: "1:851251000176:web:cdb5cb5ce6f6587a8e95b5",
-  measurementId: "G-GYP2DWZCCJ"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 // متغیرهای سراسری

@@ -138,12 +138,21 @@ This project is optimized for deployment on **Vercel** or **Google Cloud Run**.
 npm run build
 ```
 
-### Docker (Optional)
-A `Dockerfile` is likely needed for Cloud Run (ensure it uses `node:18-alpine` or similar).
+### Docker (Cloud Run)
+The project includes a production-ready `Dockerfile` (Node.js 18 Alpine, multi-stage).
+```bash
+# Build
+docker build -t north-road-ai .
+
+# Run locally
+docker run -p 3000:3000 north-road-ai
+```
 
 ---
 
 ## 🤝 Contributing
+
+We welcome contributions! Please read our [Developer Onboarding Guide (CONTRIBUTING.md)](./CONTRIBUTING.md) for detailed setup instructions, code standards, and workflows.
 
 1. Fork the project.
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`).

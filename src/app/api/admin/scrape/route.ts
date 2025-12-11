@@ -71,27 +71,37 @@ export async function POST(req: Request) {
         const batch = adminDb.batch();
         const collectionRef = adminDb.collection("knowledge_base");
 
+        const CONCURRENCY = 5;
         let savedCount = 0;
 
-        for (const chunk of chunks) {
-            try {
-                const embeddingResult = await embedModel.embedContent(chunk);
-                const vector = embeddingResult.embedding.values;
+        for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+            const batchChunks = chunks.slice(i, i + CONCURRENCY);
+            console.log(`Processing batch ${Math.ceil((i + 1) / CONCURRENCY)} (Size: ${batchChunks.length})...`);
 
-                const docRef = collectionRef.doc();
-                batch.set(docRef, {
-                    text: `SOURCE: ${title}\nURL: ${url}\nCONTENT: ${chunk}`,
-                    embedding: FieldValue.vector(vector),
-                    source: "Web Scraper",
-                    originalUrl: url,
-                    title: title,
-                    targetAgents: targetAgents || ['all'], // 🔥 Access Control Restored
-                    createdAt: new Date()
-                });
-                savedCount++;
-            } catch (e) {
-                console.error("Embedding chunk failed, skipping...");
-            }
+            const promises = batchChunks.map(async (chunk) => {
+                try {
+                    const embeddingResult = await embedModel.embedContent(chunk);
+                    const vector = embeddingResult.embedding.values;
+
+                    const docRef = collectionRef.doc();
+                    batch.set(docRef, {
+                        text: `SOURCE: ${title}\nURL: ${url}\nCONTENT: ${chunk}`,
+                        embedding: FieldValue.vector(vector),
+                        source: "Web Scraper",
+                        originalUrl: url,
+                        title: title,
+                        targetAgents: targetAgents || ['all'], // 🔥 Access Control Restored
+                        createdAt: new Date()
+                    });
+                    return true; // Success
+                } catch (e) {
+                    console.error("Embedding chunk failed, skipping...", e);
+                    return false; // Failed
+                }
+            });
+
+            const results = await Promise.all(promises);
+            savedCount += results.filter(r => r).length;
         }
 
         if (savedCount > 0) {

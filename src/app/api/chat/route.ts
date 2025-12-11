@@ -12,6 +12,7 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { KnowledgeService } from "@/lib/api/knowledge";
+import { embeddingCache } from "@/lib/cache";
 import { UserService } from "@/lib/user-service";
 import { getAgentById, getDefaultAgent } from "@/lib/agents";
 import { adminDb } from "@/lib/firebase-admin";
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
 
             if (!usageCheck.canProceed) {
                 return NextResponse.json({
-                    error: usageCheck.message || "Daily Limit Exceeded",
+                    error: (usageCheck as any).message || "Daily Limit Exceeded",
                     isLimitReached: true // Flag for frontend to show upgrade modal
                 }, { status: 429 });
             }
@@ -94,12 +95,19 @@ export async function POST(req: Request) {
         // 5. VECTOR SEARCH
         let vectorContext = "";
         try {
-            const embedModel = createGenAI().getGenerativeModel({ model: "text-embedding-004" });
-            const embeddingResult = await embedModel.embedContent(message);
-            const vector = embeddingResult.embedding.values;
+            // Check Cache first
+            let vector = embeddingCache.get(message);
+
+            if (!vector) {
+                const embedModel = createGenAI().getGenerativeModel({ model: "text-embedding-004" });
+                const embeddingResult = await embedModel.embedContent(message);
+                vector = embeddingResult.embedding.values as number[];
+                // Cache the result
+                embeddingCache.set(message, vector);
+            }
 
             const vectorQuery = await adminDb.collection("knowledge_base").findNearest("embedding", vector, {
-                limit: 10, // Fetch more to allow for filtering
+                limit: 5, // Optimized from 10 to 5 for speed
                 distanceMeasure: "COSINE",
             });
             const snapshot = await vectorQuery.get();
