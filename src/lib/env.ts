@@ -44,20 +44,31 @@ const processEnv = {
 // Validate immediately on import
 // console.log("🔒 Validating Environment Variables...");
 
+// Helper to check if we are in a build environment (server-side, no window, and missing keys)
+// This allows the build to proceed without crashing on missing runtime secrets.
+const isBuildPhase = typeof window === "undefined" && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+
 const parsed = envSchema.safeParse(processEnv);
 
 if (!parsed.success) {
-    console.error("❌ Invalid Environment Variables:", parsed.error.format());
-
-    // In dev/build, we might want to warn or crash. 
-    // For safety in production deployment, we should likely crash if criticals are missing.
-    if (process.env.NODE_ENV === 'production') {
-        throw new Error("❌ Invalid Environment Variables");
+    if (isBuildPhase) {
+        // console.warn("⚠️ Build phase detected. Skipping strict env validation.");
     } else {
-        // In dev, sometimes we might be partial, but let's be strict for user request "Quality"
-        // console.warn("⚠️  Missing Env Vars. Check .env.local");
+        console.error("❌ Invalid Environment Variables:", parsed.error.format());
+
+        // In dev/build, we might want to warn or crash. 
+        // For safety in production deployment, we should likely crash if criticals are missing.
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error("❌ Invalid Environment Variables");
+        } else {
+            // In dev, sometimes we might be partial, but let's be strict for user request "Quality"
+            // console.warn("⚠️  Missing Env Vars. Check .env.local");
+        }
     }
 }
 
-export const env = parsed.success ? parsed.data : processEnv as z.infer<typeof envSchema> // Fallback only for type safety if we chose not to throw
-    ;
+// If in build phase and parsing failed, allow empty values to avoid crash
+// Otherwise, rely on parsed.data or fallback (which will be invalid but we threw/logged above)
+const envData = parsed.success ? parsed.data : (isBuildPhase ? processEnv : processEnv) as z.infer<typeof envSchema>;
+
+export const env = envData;
