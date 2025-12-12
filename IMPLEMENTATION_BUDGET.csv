@@ -1,0 +1,229 @@
+North Road AI - Implementation Budget Spreadsheet (12 Weeks)
+Total Project Budget: $207,650 CAD
+
+TEAM RATES & ALLOCATION
+Role,Hourly Rate (CAD),Week 1,Week 2,Week 3,Week 4,Week 5,Week 6,Week 7,Week 8,Week 9,Week 10,Week 11,Week 12,Total Hours,Total Cost
+Tech Lead,$140,40,40,40,30,30,30,30,30,30,30,20,20,370,$51,800
+Full-Stack Dev #1,$110,0,0,0,40,40,40,40,40,40,40,40,40,360,$39,600
+Full-Stack Dev #2,$100,0,0,40,40,40,20,10,10,10,10,0,0,180,$18,000
+DevOps Engineer,$120,30,30,30,20,20,20,30,30,30,30,20,0,290,$34,800
+QA Engineer,$85,0,0,30,30,30,30,0,0,0,0,0,0,120,$10,200
+UI/UX Designer,$110,0,0,0,20,20,20,20,20,20,20,20,0,160,$17,600
+Project Manager,$125,10,10,10,10,10,10,10,10,10,10,10,10,120,$15,000
+Security Consultant,$160,40,40,0,0,0,0,0,0,0,0,0,0,80,$12,800
+,,,,,,,,,,,,,,
+Weekly Hours Total,,120,120,150,190,190,170,140,140,140,140,110,70,1680,
+Weekly Cost Total,,"$13,200","$13,200","$13,700","$18,950","$18,950","$16,850","$14,100","$14,100","$14,100","$14,100","$11,000","$7,700",,"$169,950"
+
+PHASE BREAKDOWN
+Phase,Weeks,Primary Team,Total Hours,Labor Cost,Additional Costs,Phase Total
+Phase 1: Security & Foundation,1-3,"Tech Lead, DevOps, Security, PM",290,"$40,400","$5,000 (security tools)","$45,400"
+Phase 2: Testing Infrastructure,3-6,"FS Dev #2, QA, Tech Lead (review)",240,"$23,850","$1,500 (testing tools)","$25,350"
+Phase 3: Feature Completion,4-9,"FS Dev #1, Designer, Tech Lead (review)",420,"$48,000","$2,000 (design tools)","$50,000"
+Phase 4: Performance & Scalability,8-11,"DevOps, Tech Lead, FS Dev #2",240,"$29,600","$3,500 (Redis, monitoring)","$33,100"
+Phase 5: Documentation & Polish,10-12,"FS Dev #1, Tech Lead, PM",160,"$19,400","$1,000 (doc tools)","$20,400"
+Project Management (All),1-12,PM throughout,120,"$15,000",N/A,"$15,000"
+Subtotal,,,1470,"$176,250","$13,000","$189,250"
+
+ADDITIONAL COSTS
+Item,Cost (CAD),Notes
+Contingency (15%),"$26,438",For scope creep and unknowns
+Tools & Licenses,"$3,000","Sentry Pro, Figma, testing tools"
+Infrastructure (3 months),"$2,000","Staging environments, Redis Cloud"
+Security Audit Report,"$5,000",Included in Phase 1
+Development Tools,"$1,500","GitHub Teams, Linear/Jira"
+Design Software,"$2,000","Figma Professional, Adobe CC"
+Testing Tools,"$1,500","Playwright, Artillery, k6"
+Performance Monitoring,"$3,500","Vercel Analytics Pro, APM tools"
+Documentation Tools,"$1,000","Swagger/OpenAPI, Notion"
+Buffer for Overages,"$5,000",Safety net
+Additional Costs Subtotal,"$50,938",
+
+GRAND TOTAL
+Development Labor (1680 hrs),,"$169,950"
+Project Management,,"$15,000"
+Labor Subtotal,,"$184,950"
+Additional Costs,,"$13,000"
+Contingency & Buffer,,"$31,438"
+TOTAL PROJECT COST,,"$229,388"
+
+REVISED CALCULATION (Conservative)
+Item,Amount (CAD)
+Core Development Labor (1350 hrs),"$161,250"
+Project Management (120 hrs),"$15,000"
+Security Consultant (80 hrs),"$12,800"
+Labor Subtotal,"$189,050"
+Tools & Infrastructure,"$13,000"
+Contingency (10%),"$18,905"
+RECOMMENDED BUDGET,"$220,955"
+
+COST SCENARIOS
+Scenario,Team,Duration,Estimated Cost,Notes
+Minimum (Security Only),Tech Lead + DevOps,3 weeks,"$30,000",Just fix critical security issues
+Lean (Security + Core),Tech Lead + 1 FS Dev + PT DevOps/QA,12 weeks,"$120,000",Security + basic features + minimal testing
+Recommended (Full Production),Full team (7-8 people),12 weeks,"$207,650",Complete production-ready solution
+Premium (Accelerated),Full team + contractors,8 weeks,"$280,000",Faster timeline with more resources
+
+WEEKLY CASH FLOW
+Week,Labor Cost,Infrastructure,Tools,Weekly Total,Cumulative Total
+Week 1,"$13,200",$500,$800,"$14,500","$14,500"
+Week 2,"$13,200",$500,$200,"$13,900","$28,400"
+Week 3,"$13,700",$500,"$1,200","$15,400","$43,800"
+Week 4,"$18,950",$500,$300,"$19,750","$63,550"
+Week 5,"$18,950",$500,$200,"$19,650","$83,200"
+Week 6,"$16,850",$500,$300,"$17,650","$100,850"
+Week 7,"$14,100",$500,$100,"$14,700","$115,550"
+Week 8,"$14,100",$500,"$1,500","$16,100","$131,650"
+Week 9,"$14,100",$500,$200,"$14,800","$146,450"
+Week 10,"$14,100",$500,"$1,000","$15,600","$162,050"
+Week 11,"$11,000",$500,$300,"$11,800","$173,850"
+Week 12,"$7,700",$500,$200,"$8,400","$182,250"
+Subtotal (12 weeks),"$169,950","$6,000","$6,300","$182,250",
+Contingency (15%),,,,,"$27,338"
+GRAND TOTAL,,,,,"$209,588"
+
+PAYMENT SCHEDULE (Recommended)
+Milestone,Timing,Amount,Cumulative
+Contract Signing,Day 1,"$52,000 (25%)","$52,000"
+Phase 1 Complete (Security),End of Week 3,"$52,000 (25%)","$104,000"
+Phase 2+3 Midpoint,End of Week 6,"$52,000 (25%)","$156,000"
+Launch Ready,End of Week 12,"$51,650 (25%)","$207,650"
+
+COST COMPARISON
+Approach,Cost (CAD),Timeline,Quality,Risk
+Build from Scratch,"$500,000+",9-12 months,Unknown,High - unproven concept
+Fix This Codebase,"$207,650",12 weeks,High,Low - foundation solid
+Outsource to Agency,"$350,000+",6-9 months,Variable,Medium - quality varies
+Hire Full-Time Team,"$720,000/year",Ongoing,High,Medium - expensive
+
+ROI ANALYSIS
+Investment,,"$207,650"
+Current Asset Value,,"$100,000 (development already done)"
+Total Investment,,"$307,650"
+Expected Valuation (with 100 users @ $39/mo),,"$280,000 (5x ARR multiple)"
+Expected Valuation (with 500 users),,"$1,400,000"
+Expected Valuation (with 2000 users),,"$5,600,000"
+ROI at 500 users,,355%
+ROI at 2000 users,,1720%
+
+MONTHLY OPERATING COSTS (Post-Launch)
+Service,Cost/Month (CAD),Annual Cost
+Vercel Pro,$20,$240
+Firebase Blaze,"$50-200 (usage-based)","$600-2,400"
+Google AI (Gemini),"$100-1,000 (usage-based)","$1,200-12,000"
+Stripe (2.9% + $0.30),Variable (% of revenue),Variable
+Sentry Pro,$35,$420
+Redis Cloud,"$10-50",$120-600
+Domain & SSL,$15,$180
+Email Service (SendGrid),$20,$240
+Support Tools (Intercom/Zendesk),$80,$960
+Analytics (Mixpanel/Amplitude),$0-100,"$0-1,200"
+Total Operating Costs,"$330-1,520/month","$3,960-18,240/year"
+
+BREAK-EVEN ANALYSIS
+Scenario,Monthly Revenue (CAD),Users Needed,Months to Break-Even
+Conservative,"$4,680 (120 users @ $39)",120,44 months
+Moderate,"$15,600 (400 users @ $39)",400,13 months
+Optimistic,"$39,000 (1000 users @ $39)",1000,5 months
+
+TEAM MEMBER COST DETAIL
+Role,Rate,Hours,Subtotal,Benefits (0%),Total Cost
+Tech Lead,$140/hr,370,"$51,800",$0,"$51,800"
+Full-Stack Dev #1,$110/hr,360,"$39,600",$0,"$39,600"
+Full-Stack Dev #2,$100/hr,180,"$18,000",$0,"$18,000"
+DevOps Engineer,$120/hr,290,"$34,800",$0,"$34,800"
+QA Engineer,$85/hr,120,"$10,200",$0,"$10,200"
+UI/UX Designer,$110/hr,160,"$17,600",$0,"$17,600"
+Project Manager,$125/hr,120,"$15,000",$0,"$15,000"
+Security Consultant,$160/hr,80,"$12,800",$0,"$12,800"
+Total Contractors,,1680,"$199,800",$0,"$199,800"
+
+CANADIAN MARKET RATE COMPARISON
+Role,Low (CAD),Average (CAD),High (CAD),Used in Budget
+Senior Tech Lead,$130/hr,$150/hr,$200/hr,$140/hr ✓
+Senior Full-Stack,$90/hr,$110/hr,$140/hr,$110/hr ✓
+Mid Full-Stack,$80/hr,$100/hr,$120/hr,$100/hr ✓
+Senior DevOps,$100/hr,$120/hr,$160/hr,$120/hr ✓
+Mid QA Engineer,$70/hr,$85/hr,$110/hr,$85/hr ✓
+Mid UI/UX Designer,$90/hr,$110/hr,$140/hr,$110/hr ✓
+Senior PM,$110/hr,$125/hr,$160/hr,$125/hr ✓
+Security Specialist,$140/hr,$160/hr,$220/hr,$160/hr ✓
+
+BUDGET NOTES
+1. All rates are in Canadian Dollars (CAD)
+2. Rates based on 2024/2025 Toronto/Vancouver contractor market
+3. No benefits included (contractors not employees)
+4. Contingency covers scope creep and unknown issues
+5. Payment schedule assumes milestone-based payments
+6. Operating costs assume moderate usage (1000-5000 users)
+7. Break-even assumes 15% paid conversion rate
+8. Infrastructure costs scale with usage
+9. Security consultant engaged for weeks 1-2 only
+10. All team members are contractors (no employment overhead)
+
+ALTERNATE BUDGET (If Cost Cutting Needed)
+Item,Original,Reduced,Savings
+Security Consultant,"$12,800","$8,000 (1 week only)","$4,800"
+UI/UX Designer,"$17,600","$8,800 (half time)","$8,800"
+QA Engineer,"$10,200","$5,100 (half time)","$5,100"
+Contingency,"$26,438","$15,000 (reduced)","$11,438"
+Tools & Infrastructure,"$13,000","$8,000 (essential only)","$5,000"
+Total Savings,,,,"$35,138"
+New Total Budget,,"$207,650","$172,512"
+
+FINANCING OPTIONS
+Option,Amount,Terms,Monthly Payment (if loan)
+Self-Funded,"$207,650",N/A,N/A
+Angel Investment,"$207,650","15-20% equity",N/A
+Seed Round,"$500,000-750,000","15-25% equity",N/A
+Business Loan,"$207,650","5 years, 8% APR","$4,215/month"
+Line of Credit,"$207,650",Variable rate as used,Interest only until drawn
+
+RISK BUDGET (Included in Contingency)
+Risk,Probability,Potential Cost,Mitigation Budget
+Security takes 1 extra week,Medium,"$10,000",Included in contingency
+TypeScript errors > expected,Medium,"$5,000",Included in contingency
+Team member drops out,Low,"$15,000 (recruiting + ramp)",Included in contingency
+Scope creep (20% increase),High,"$30,000",Change control process
+API costs exceed estimates,Medium,"$5,000",Caching strategy
+Infrastructure issues,Low,"$3,000",Redundancy built in
+Total Risk Exposure,,"$68,000",
+Contingency Allocated,,"$31,438 (46% coverage)",
+
+COST OPTIMIZATION OPPORTUNITIES
+Optimization,Potential Savings,Trade-off
+Use offshore developers,"$50,000-80,000",Communication overhead + time zones
+Extend timeline to 16 weeks,"$20,000 (less parallel work)",4 weeks later to market
+Cut gamification UI,"$16,000",Less engaging product
+Defer mentor portal to v2,"$16,000",Missing B2B revenue stream
+Reduce test coverage to 50%,"$8,000",Higher bug risk
+Skip mobile apps initially,"$10,000",Web-only launch
+Self-manage (no PM),"$15,000",Higher coordination overhead
+Total Potential Savings,"$135,000-155,000",Significant quality/timeline impact
+
+RECOMMENDED APPROACH
+Budget Option,Cost,Timeline,Quality,Recommendation
+Full Budget,"$207,650",12 weeks,Excellent,✓ RECOMMENDED
+Lean Budget,"$172,512",12 weeks,Good,Acceptable if budget constrained
+Minimum Budget,"$120,000",12 weeks,Fair,Only if severely cash constrained
+Premium Budget,"$280,000",8 weeks,Excellent,If time-critical (fundraising deadline)
+
+FINAL RECOMMENDATION
+Total Budget Required: $207,650 CAD
+Payment Terms: 25% upfront + 3 milestone payments
+Timeline: 12 weeks (84 days)
+Risk Level: MEDIUM (well-planned with contingency)
+Expected ROI: 5-20x within 18-24 months
+Approval Status: RECOMMENDED FOR APPROVAL
+
+Notes:
+- Budget includes 15% contingency for unknowns
+- All team members are contractors (no benefits/overhead)
+- Rates based on current Canadian tech market (2024/2025)
+- Infrastructure costs scale with user growth
+- Operating costs separate from implementation budget
+- Break-even achievable with 400-500 paying users
+
+For questions or detailed breakdown of any line item contact Project Manager
+Last updated: December 2024
+Currency: Canadian Dollars (CAD)
