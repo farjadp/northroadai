@@ -56,7 +56,7 @@ export async function POST(req: Request) {
 
     console.log(`Starting upload for: ${file.name} (${file.type}, ${file.size} bytes) by ${userEmail}`);
 
-    // 2. VALIDATION (Zod)
+    // 2. VALIDATION (Zod + Magic Numbers)
     // We validate the metadata before processing
     // Note: Zod schema sees numbers/strings, so we simply check values against schema logic
     const validationResult = UploadValidationSchema.safeParse({
@@ -65,11 +65,28 @@ export async function POST(req: Request) {
     });
 
     if (!validationResult.success) {
-      // Allow if explicit override? No, strict security first.
-      // But maybe we need to support images too if GenAI supports them?
-      // For now, adhere to schema.
       console.warn("Validation failed:", validationResult.error.format());
       throw new AppError("Invalid file type or size", 400, validationResult.error.flatten());
+    }
+
+    // 3. SECURE CONTENT VALIDATION (Magic Numbers)
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Dynamic import for file-type (ESM)
+    const { fileTypeFromBuffer } = await import('file-type');
+    const typeInfo = await fileTypeFromBuffer(buffer);
+
+    if (!typeInfo) {
+      throw new AppError("Unknown file format (Magic Number check failed)", 400);
+    }
+
+    // Allow list based on expected usage (PDF, Images, Text)
+    const ALLOWED_MIMES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'text/plain', 'text/csv'];
+
+    if (!ALLOWED_MIMES.includes(typeInfo.mime)) {
+      console.warn(`Security Block: Upload claimed ${file.type} but is actually ${typeInfo.mime}`);
+      throw new AppError(`Security Error: Real file type (${typeInfo.mime}) is not allowed`, 400);
     }
 
     // 3. Generate Unique Filename
@@ -81,8 +98,7 @@ export async function POST(req: Request) {
     tempFilePath = path.join(os.tmpdir(), safeName);
 
     // 4. Write to Temp
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // Buffer already created in validation step
     await writeFile(tempFilePath, buffer);
     console.log(`Written to temp: ${tempFilePath}`);
 

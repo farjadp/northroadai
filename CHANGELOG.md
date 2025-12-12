@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+
+
 ## [v0.1.3] - 2025-12-11 18:00:00
 
 ### 🛡️ Security
@@ -13,6 +15,12 @@ All notable changes to this project will be documented in this file.
 - **Dynamic Config**: Replaced hardcoded Cloud Run URL in `src/lib/api-config.ts` with `NEXT_PUBLIC_API_URL` environment variable.
 - **CI/CD**: Added GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) for automated testing and building.
 
+### 🛡️ Data Management & Security
+- **Guest Chat Archival**: Created `/api/admin/archive/dumper` to move old chats to Cloud Storage in JSONL format for AI training, satisfying retention while preserving IP.
+- **GDPR Compliance**: Implemented `/api/user/data/export` and `/api/user/data/delete` endpoints for full user data control.
+- **Secure Storage**: Enforced ownership isolation in Firebase Storage (`storage.rules`).
+- **Upload Hardening**: Added server-side "Magic Number" validation to `/api/upload` to block malicious executables masked as images.
+
 ### 🚀 Performance
 - **Caching**: Implemented in-memory LRU Cache (`src/lib/cache.ts`) for embeddings, reducing repeated API calls to Google Gemini AI.
 - **Parallel Scraper**: Updated `/api/admin/scrape` to process chunks in parallel (5x concurrency), speeding up knowledge base ingestion.
@@ -23,6 +31,8 @@ All notable changes to this project will be documented in this file.
 - **Onboarding**: Added `CONTRIBUTING.md` and `Dockerfile` for easier developer setup and deployment.
 - **JSDoc**: Added comprehensive documentation to `src/lib/cache.ts` and `src/lib/api-error.ts`.
 
+
+
 ## [v0.1.2] - 2025-12-11 12:30:00
 
 ### 💎 Quality & Reliability
@@ -30,6 +40,8 @@ All notable changes to this project will be documented in this file.
 - **Safety**: Added `src/lib/env.ts` with Zod validation. The app now fails fast if required environment variables are missing (e.g., Firebase Config, Gemini Key).
 - **Testing**: Added Jest and React Testing Library infrastructure. Added unit tests for Environment validation. Run `npm run test` to verify.
 - **Error Handling**: Introduced `AppError` class and `handleApiError` utility in `src/lib/api-error.ts` for standardized JSON error responses across APIs.
+
+
 
 ## [v0.1.1] - 2025-12-11 11:00:00
 
@@ -41,9 +53,13 @@ All notable changes to this project will be documented in this file.
 - **Validation**: Added Zod schema validation for file uploads (size, mime-type) and chat settings inputs.
 - **Audit**: Implemented audit logging in Firestore (`audit_logs` collection) for all file uploads and admin setting changes.
 
+
+
 ### 🐛 Fixes
 - Fixed potential "auth/invalid-api-key" errors by switching to environment-based configuration.
 - Fixed vulnerability where unauthenticated users could potential upload files or change chat settings.
+
+
 
 ### ⚡ Improvements
 - Added `src/lib/schemas/admin-validation.ts` for centralized request validation.

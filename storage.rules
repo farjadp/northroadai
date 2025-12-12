@@ -1,0 +1,32 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // 1. User Uploads (Private)
+    // Only the owner can read/write their own files.
+    match /uploads/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // 2. Mentor Avatars (Public Read)
+    // Publicly visible, but only writable by authenticated users (or specific roles).
+    // Note: Writing is usually done via Admin SDK, which bypasses these rules.
+    // If client-side upload is added later, we restrict it here.
+    match /mentors/avatars/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null; // Refine this later if client upload is used
+    }
+
+    // 3. Datasets & Internal (No Access)
+    // Strictly backend-only access (Admin SDK).
+    match /datasets/{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Default: Deny everything else
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

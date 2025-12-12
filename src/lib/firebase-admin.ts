@@ -16,7 +16,7 @@ function initFirebaseAdmin() {
   try {
     // 1. تلاش برای حالت لوکال (خواندن فایل)
     const serviceAccountPath = path.join(process.cwd(), "service-account.json");
-    
+
     if (fs.existsSync(serviceAccountPath)) {
       const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
       admin.initializeApp({
@@ -42,3 +42,4 @@ initFirebaseAdmin();
 
 export const adminDb = admin.firestore();
 export const adminAuth = admin.auth();
+export const adminStorage = admin.storage();
