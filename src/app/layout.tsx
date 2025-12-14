@@ -19,6 +19,11 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/auth-context";
+import Script from "next/script";
+import {
+  buildPublicRuntimeConfig,
+  serializeRuntimeConfig,
+} from "@/lib/runtime-config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,11 +45,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const runtimeConfig = buildPublicRuntimeConfig();
+  const serializedRuntimeConfig = serializeRuntimeConfig(runtimeConfig);
+
   return (
     <html lang="en" className="dark">
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans bg-black text-white antialiased min-h-screen selection:bg-cyan-500/30 selection:text-cyan-100`}
       >
+        <Script id="nra-runtime-config" strategy="beforeInteractive">
+          {`window.__NRA_RUNTIME_CONFIG__ = ${serializedRuntimeConfig};`}
+        </Script>
         <AuthProvider>
           {children}
         </AuthProvider>
