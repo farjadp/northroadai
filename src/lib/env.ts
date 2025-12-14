@@ -25,6 +25,9 @@ const envSchema = z.object({
     // Optional overrides
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     MOBILE_BUILD: z.string().optional(),
+
+    // Deployment
+    NEXT_PUBLIC_API_URL: z.string().url().optional().or(z.literal('')), // Optional, can be empty string for relative
 });
 
 // Process Env wrapper
@@ -39,6 +42,7 @@ const processEnv = {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     NODE_ENV: process.env.NODE_ENV,
     MOBILE_BUILD: process.env.MOBILE_BUILD,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
 };
 
 // Validate immediately on import

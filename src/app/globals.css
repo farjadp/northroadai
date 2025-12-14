@@ -3,6 +3,32 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* BRAND COLORS */
+  --cyan-neon: #06B6D4;
+  --cyan-bright: #22D3EE;
+  --cyan-glow: #67E8F9;
+  
+  --purple-deep: #7C3AED;
+  --indigo-dark: #312E81;
+  
+  --black-pure: #000000;
+  --gray-900: #0A0A0A;
+  --gray-800: #1A1A1A;
+  --slate-400: #94A3B8;
+  --white: #FFFFFF;
+
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --info: #3B82F6;
+
+  /* AGENT COLORS */
+  --navigator-primary: #10B981;
+  --builder-primary: #3B82F6;
+  --ledger-primary: #F59E0B;
+  --counsel-primary: #A855F7;
+  --rainmaker-primary: #F43F5E;
 }
 
 @theme inline {
@@ -45,4 +71,121 @@ body {
 
 .safe-padding-bottom {
   padding-bottom: var(--sab);
+}
+
+/* BRAND BOOK STYLES */
+
+/* Glass Morphism */
+.glass-card-dark {
+  background: rgba(10, 10, 10, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.glass-card-light {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.glass-card-neon {
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Shimmer Effect */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(6, 182, 212, 0) 0%,
+    rgba(6, 182, 212, 0.05) 50%,
+    rgba(6, 182, 212, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Ferrofluid Animation */
+.ferrofluid-blob {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: rgba(30, 58, 139, 0.3);
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: ferrofluid 15s infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes ferrofluid {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(80px, -80px) scale(1.2); }
+  66% { transform: translate(-80px, 80px) scale(0.8); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+/* Progress Circle */
+.progress-circle {
+  width: 128px;
+  height: 128px;
+  transform: rotate(-90deg);
+}
+
+.progress-circle-bg {
+  fill: transparent;
+  stroke: #1E293B;
+  stroke-width: 8;
+}
+
+.progress-circle-fill {
+  fill: transparent;
+  stroke: var(--stroke-color, #10B981);
+  stroke-width: 8;
+  stroke-dasharray: 351;
+  stroke-dashoffset: calc(351 - (351 * var(--progress) / 100));
+  filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));
+  transition: stroke-dashoffset 1s ease;
+}
+
+/* Terminal UI */
+.terminal-line {
+  animation: typewriter 0.5s steps(40) forwards;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.terminal-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 16px;
+  background: rgba(16, 185, 129, 0.5);
+  animation: blink 1s infinite;
+  vertical-align: middle;
+}
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
 }

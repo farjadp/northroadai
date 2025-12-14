@@ -4,15 +4,19 @@ Welcome to the **North Road AI** engineering team! This guide will help you set 
 
 ## 🚀 Quick Start
 
+
+
 ### 1. Prerequisites
 - **Node.js**: v18.17+ (Recommended: use `nvm`)
 - **Git**: Latest version.
 - **Firebase CLI**: `npm install -g firebase-tools`
 - **Jina AI & Gemini Keys**: You'll need API keys from Google AI Studio and Jina.
 
+
+
 ### 2. Installation
 ```bash
-git clone https://github.com/northroadai/core.git
+git clone https://github.com/farjadp/northroadai/
 cd north-road-ai
 npm install
 ```
@@ -23,6 +27,8 @@ Copy `.env.example` (or create one) to `.env.local`:
 cp .env.example .env.local
 ```
 *Ask the team lead for the development API keys.*
+
+
 
 ### 4. Running Locally
 ```bash
@@ -44,12 +50,15 @@ Access the dashboard at `http://localhost:3000/dashboard`.
   - `firebase-admin.ts`: Server-side Admin SDK.
 - `public`: Static assets (images, icons).
 
+
 ## 🧪 Testing
 
 We use **Jest** and **React Testing Library**.
 
 - **Run Unit Tests**: `npm run test`
 - **Run Smoke Tests**: `npm run test:smoke` (if configured)
+
+
 
 ## 🐳 Deployment (Docker)
 
