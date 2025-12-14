@@ -12,20 +12,44 @@ import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
+import { getRuntimeConfigValue } from "@/lib/runtime-config";
 
-// مقادیر مستقیم (از لاگ‌های قبلی شما برداشته شده)
-// Check if we are in a browser or if keys are present
-const isBuildPhase = typeof window === "undefined" && !process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+const hasServerKeys =
+  typeof window === "undefined" &&
+  Boolean(
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY ||
+      process.env.FIREBASE_API_KEY
+  );
+
+const isBuildPhase = typeof window === "undefined" && !hasServerKeys;
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "dummy-key-for-build",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "dummy.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "dummy-project",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "dummy.appspot.com",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "0000000000",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:00000000:web:00000000",
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+  apiKey:
+    getRuntimeConfigValue("NEXT_PUBLIC_FIREBASE_API_KEY") ||
+    (isBuildPhase ? "dummy-key-for-build" : ""),
+  authDomain:
+    getRuntimeConfigValue("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN") ||
+    (isBuildPhase ? "dummy.firebaseapp.com" : ""),
+  projectId:
+    getRuntimeConfigValue("NEXT_PUBLIC_FIREBASE_PROJECT_ID") ||
+    (isBuildPhase ? "dummy-project" : ""),
+  storageBucket:
+    getRuntimeConfigValue("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET") ||
+    (isBuildPhase ? "dummy.appspot.com" : ""),
+  messagingSenderId:
+    getRuntimeConfigValue("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID") ||
+    (isBuildPhase ? "0000000000" : ""),
+  appId:
+    getRuntimeConfigValue("NEXT_PUBLIC_FIREBASE_APP_ID") ||
+    (isBuildPhase ? "1:00000000:web:00000000" : ""),
+  measurementId: getRuntimeConfigValue("NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID")
 };
+
+if (!isBuildPhase && !firebaseConfig.apiKey) {
+  throw new Error(
+    "Missing Firebase configuration. Ensure runtime env variables are set."
+  );
+}
 
 // Initialize only if not already initialized
 const app: FirebaseApp = getApps().length
